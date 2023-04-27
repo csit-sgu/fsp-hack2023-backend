@@ -1,6 +1,5 @@
-from dataclasses import dataclass
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import String, Integer, Column, DateTime,  Enum, LargeBinary
+from sqlalchemy import String, Integer, Column, DateTime,  Enum, LargeBinary, Text, ForeignKey, Date
 from datetime import datetime
 from enum import Enum
 
@@ -60,23 +59,22 @@ class Profile(Base):
     about = Column(Text, nullable=True)
     name = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
-    pathernal = Column(String(255), nullable=True)
-
+    patronymic = Column(String(255), nullable=True)
 
 class User(Base):
     uid = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     date_reg = Column(DateTime, default=datetime.now, nullable=False)
     date_login = Column(DateTime, default=datetime.now, 
             onupdate=datetime.now, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(LargeBinary, nullable=False)
     athlete_FK = Column(Integer, ForeignKey(Athlete.id), nullable=True)
     representative_FK = Column(Integer, ForeignKey(Representative.id), nullable=True)
     administrator_FK = Column(Integer, ForeignKey(Admin.id), nullable=True)
     partner_FK = Column(Integer,ForeignKey(Partner.id),nullable=True)
-    personal_FK = Column(Integer, ForeignKey(Personal.id), nullable=True)
+    personal_FK = Column(Integer, ForeignKey(Profile.id), nullable=True)
     email: Column(String(255), nullable=False)
 
-class Events(Base):
+class Event(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String(255), nullable=False)
     date_create = Column(Date, default=datetime.datetime.now().date(), nullable=False)
@@ -94,12 +92,10 @@ class EventRequest(Base):
     representative_FK = Column(Integer, ForeignKey(Representative.id), nullable=False)
 
 
-class EventConcats(Base):
+class EventConcat(Base):
     user_id = Column(Integer, ForeignKey(), nullable=False)
     ev_id = Column(Integer, nullable=False)
 
-class EventTeams(Base):
+class EventTeam(Base):
     ev_id_FK = Column(Integer, ForeignKey(Events.id), nullable=False)
     team_id_FK = Column(Integer, ForeignKey(Team.id), nullable=False)
-
-

@@ -34,8 +34,8 @@ class UserService(Service):
             hashed_password=user.password,
             email=user.email
         )
+
         
-        # TODO: first_name, last_name
 
         with self._session() as session:
             session.add(model)

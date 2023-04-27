@@ -60,7 +60,7 @@ def login():
         abort(400)
 
     session['email'] = user.email
-    # session['claims'] = user.claims
+    session['claims'] = user.claims
     
     return '', 200
 
