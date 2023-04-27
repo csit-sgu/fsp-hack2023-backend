@@ -1,5 +1,8 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import String, Integer, Column, DateTime,  Enum, LargeBinary, Text, ForeignKey, Date
+from sqlalchemy import String, Integer, Column, DateTime, \
+        LargeBinary, Text, ForeignKey, Date, PrimaryKeyConstraint
+        
+from sqlalchemy import Enum as SQLEnum
 from datetime import datetime
 from enum import Enum
 
@@ -26,6 +29,7 @@ class State(Enum):
     CONFIRMED = 4
 
 class Team(Base):
+    __tablename__ = 'team'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String(255), nullable=False)
     rating = Column(Integer, nullable=True)
@@ -33,27 +37,33 @@ class Team(Base):
             onupdate=datetime.now, nullable=False)
 
 class Athlete(Base):
+    __tablename__ = 'athlete'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     team_FK = Column(Integer, ForeignKey(Team.id), nullable=False)
     rating = Column(Integer, nullable=True)
-    role = Column(Role(Enum), nullable=False)
+    role = Column(SQLEnum(Role), nullable=False)
 
 class Admin(Base):
+    __tablename__ = 'admin'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     
 class Representative(Base):
+    __tablename__ = 'representative'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
 
 class Partner(Base):
+    __tablename__ = 'partner'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
 
 class Profile(Base):
+    __tablename__ = 'profile'
+    
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     phone = Column(String(255), nullable=False)
     address = Column(String(255), nullable=False)
     passport = Column(String(10), nullable=False)
     birthday = Column(Date(), nullable=False)
-    gender = Column(Gender(Enum), nullable=True)
+    gender = Column(SQLEnum(Gender), nullable=True)
     organization = Column(String(255), nullable=False)
     skills = Column(Text, nullable=False)
     about = Column(Text, nullable=True)
@@ -62,6 +72,8 @@ class Profile(Base):
     patronymic = Column(String(255), nullable=True)
 
 class User(Base):
+    __tablename__ = 'users'
+    
     uid = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     date_reg = Column(DateTime, default=datetime.now, nullable=False)
     date_login = Column(DateTime, default=datetime.now, 
@@ -72,30 +84,35 @@ class User(Base):
     administrator_FK = Column(Integer, ForeignKey(Admin.id), nullable=True)
     partner_FK = Column(Integer,ForeignKey(Partner.id),nullable=True)
     personal_FK = Column(Integer, ForeignKey(Profile.id), nullable=True)
-    email: Column(String(255), nullable=False)
+    email =  Column(String(255), nullable=False)
 
 class Event(Base):
+    __tablename__ = 'event'
+    
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String(255), nullable=False)
-    date_create = Column(Date, default=datetime.datetime.now().date(), nullable=False)
+    date_create = Column(Date, default=datetime.now().date(), nullable=False)
     date_start = Column(Date, nullable=True)
     date_end = Column(Date, nullable=True)
     location = Column(String(255), nullable=True)
     about = Column(String(255), nullable=True)
 
 class EventRequest(Base):
+    __tablename__ = 'event_request'
+    
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    ev_id = Column(Integer, ForeignKey(Events.id), nullable=True)
-    state = Column(State(Enum), nullable=True)
+    event_id = Column(Integer, ForeignKey(Event.id), nullable=True)
+    state = Column(SQLEnum(State), nullable=True)
     datetime_create = Column(DateTime, default=datetime.now, 
             onupdate=datetime.now, nullable=False)
     representative_FK = Column(Integer, ForeignKey(Representative.id), nullable=False)
 
-
-class EventConcat(Base):
-    user_id = Column(Integer, ForeignKey(), nullable=False)
-    ev_id = Column(Integer, nullable=False)
-
 class EventTeam(Base):
-    ev_id_FK = Column(Integer, ForeignKey(Events.id), nullable=False)
-    team_id_FK = Column(Integer, ForeignKey(Team.id), nullable=False)
+    __tablename__ = 'event_team'
+    
+    event_id_FK = Column(Integer, ForeignKey(Event.id), nullable=False, primary_key=True)
+    team_id_FK = Column(Integer, ForeignKey(Team.id), nullable=False, primary_key=True)
+    
+    __table_args__ = (
+        PrimaryKeyConstraint(event_id_FK, team_id_FK), 
+    )
