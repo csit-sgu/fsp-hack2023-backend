@@ -1,14 +1,14 @@
 import os
 from flask import Flask, request, session, abort
 
-from .db import init_connection
-from .utils import is_none_or_empty, hash_password
-from .service import UserService
+from db.utils import init_connection
+from utils import is_none_or_empty, hash_password
+from service import UserService
 
-from .entity import User
-from .db.models import User as UserDB
+from sqlalchemy import MetaData
 
-import bcrypt
+from entity import User
+from db.base import Base
 
 app = Flask(__name__)
 
@@ -17,9 +17,9 @@ if secret is None:
     raise RuntimeError('Please, set the SECRET environment variable')
 app.secret_key = secret
 
-engine, session = init_connection('postgresql+asyncgp://postgres:postgres@localhost/fsp')
+engine, session = init_connection('postgresql+psycopg2://postgres:postgres@localhost/postgres')
 
-user_service = UserService()
+user_service = UserService(session)
 
 # @app.post('/auth/login')
 # async def login():
@@ -65,7 +65,7 @@ user_service = UserService()
 #     return '', 200
 
 @app.post('/auth/register')
-async def register():
+def register():
     """
     Регистрирует нового пользователя по `login` и `password`.
     Возможно добавить `first_name`, `last_name` и другую
@@ -80,20 +80,28 @@ async def register():
         abort(400)
 
     # username или пароль не предоставлены
-    user: User = user_service.get_by_login(login)
+    # user: User = user_service.get_by_login(body['email'])
 
-    # пользователя с таким именем не существует
-    if user is not None:
-        abort(400)
+    # # # пользователя с таким именем существует
+    # if user is not None:
+    #     print('aboba')
+    #     abort(400)
 
-    if any([is_none_or_empty(v) for v in body.values()]):
-        abort(400)
+    # if any([is_none_or_empty(v) for v in body.values()]):
+    #     print('aboba2')
+    #     abort(400)
 
     body['password'] = hash_password(body['password'])
 
+
+
     try:
-        ok = await user_service.add(User(**body))
-    except:
+        user = User(**body)
+        ok = user_service.add(user)
+    except Exception as e:
+        print(e)
         abort(400)
+    
+    ok = True
 
     return ('', 201) if ok else ('', 400)
