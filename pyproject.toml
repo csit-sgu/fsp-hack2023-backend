@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "ssu-hackaton-backend2023"
+version = "0.1.0"
+description = ""
+authors = ["Nikita Rydanov <wrongwayboyy@gmail.com>"]
+readme = "README.md"
+packages = [{include = "ssu_hackaton_backend2023"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sqlalchemy = "^2.0.11"
+flask = "^2.3.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

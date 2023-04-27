@@ -1,0 +1,4 @@
+poetry.lock
+.vscode
+.DS_Store
+.venv
