@@ -4,15 +4,18 @@ import json
 from flask import Flask, request, session, abort
 from flask_cors import CORS
 
-from db.utils import init_connection
-from utils import  hash_password, make_default_asserts
-from service import ServiceManager, UserService, EventService
+from .db.utils import init_connection
+from .utils import is_none_or_empty, hash_password
+from .service import UserService
 
-from entity import User, Event
+from .entity import User
+from .middleware import CheckFields
 
 import bcrypt
 
 app = Flask(__name__)
+app.wsgi_app = CheckFields(app.wsgi_app) # проверка на пустоту JSON-объектов
+
 CORS(app)
 
 secret = os.environ.get('SECRET')
@@ -39,8 +42,6 @@ def login():
     user_service = services.get(UserService)
     
     body = request.json
-    
-    make_default_asserts(body)
         
     password = body['password']
     email = body['email']
@@ -73,7 +74,6 @@ def register():
     user_service = services.get(UserService)
 
     body = dict(request.json)
-    make_default_asserts(body)
     
     user: User = user_service.get_by_login(body['email'])
 
