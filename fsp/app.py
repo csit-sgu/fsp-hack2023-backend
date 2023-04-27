@@ -1,9 +1,11 @@
 import os
+import json
+
 from flask import Flask, request, session, abort
 from flask_cors import CORS
 
 from db.utils import init_connection
-from utils import is_none_or_empty, hash_password, make_default_asserts
+from utils import  hash_password, make_default_asserts
 from service import ServiceManager, UserService, EventService
 
 from entity import User, Event
@@ -34,7 +36,7 @@ def login():
     именем `login` не существует.
     """
     
-    user_service = ServiceManager.get(UserService)
+    user_service = services.get(UserService)
     
     body = request.json
     
@@ -42,15 +44,12 @@ def login():
         
     password = body['password']
     email = body['email']
-
-    # логин или пароль не предоставлены
-    if is_none_or_empty(email) or is_none_or_empty(password):
-        abort(400)
         
     user = user_service.get_by_login(email)
+    
     # пользователя с таким именем не существует
     if user is None:
-        abort(400)
+        abort(400, "Пользователя не существует")
 
 
     hashed_password = user.password
@@ -74,7 +73,7 @@ def register():
     Если имя занято, возвращает 400 Bad Request.
     """
     
-    user_service = ServiceManager(UserService)
+    user_service = services.get(UserService)
 
     body = dict(request.json)
     make_default_asserts(body)
@@ -101,7 +100,7 @@ def register():
 @app.post('/events')
 def add_event():
     
-    event_service: EventService = ServiceManager.get(EventService)
+    event_service: EventService = services.get(EventService)
     
     body = dict(request.json)
     
@@ -114,7 +113,7 @@ def add_event():
 @app.get('/events')
 def get_event():
     
-    event_service: EventService = ServiceManager.get(EventService)
+    event_service: EventService = services.get(EventService)
     
     page = request.args.get('page')
     per_page = request.args.get('per_page')

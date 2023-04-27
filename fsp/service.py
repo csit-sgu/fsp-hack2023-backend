@@ -60,9 +60,10 @@ class ServiceManager:
     
     def __init__(self, session, services=[]) -> None:
         self.services = dict(zip(services, map(lambda service: service(session), services)))
+        self.session = session
           
     def get(self, required_type):
         if required_type not in self.services:
-            self.services.update(required_type, required_type(self.session))
+            self.services.update({required_type : required_type(self.session)})
         
         return self.services[required_type]
