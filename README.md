@@ -29,3 +29,22 @@
   "about" : "Some description"
 }
 ```
+
+## `POST /profile`
+```json
+{
+  "phone": "string",
+  "address": "string",
+  "passport": "string",
+  "birthday": "yyyy-mm-dd",
+  "gender": "string",
+  "organization": "string",
+  "name": "string",
+  "surname": "string",
+  "patronymic": "string",
+  "insurance": "string"
+}
+```
+
+## `GET /profile/<url parameter>`
+

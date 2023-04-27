@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from entity import User, Event
+from entity import User, Event, Profile
 from db.models import User as UserDB, \
     Event as EventDB, \
     Profile as ProfileDB
@@ -65,11 +65,39 @@ class EventService(Service):
             return result
         
 class ProfileService(Service):
-    def __init__(self, T, session):
+    def __init__(self, session):
         super().__init__(ProfileService, session)
         
-    # def add(self, profile: Profile):
-    
+    def update(self, email, fields):
+        with self._session() as session:
+            profile = session.execute(select(self._T)
+                    .where(self._T.email == email)).fetchone()
+            if profile is None:
+                session.add(ProfileDB(**fields))
+            else:
+                session.query(ProfileDB).update(fields)
+            session.commit()
+                
+    def get(self, email):
+        with self._session() as session:
+            result = session.execute(select(self._T)
+                    .where(self._T.email == email)).fetchone()
+            try:
+                profile: ProfileDB = result[0]
+                return Profile(
+                    profile.phone, 
+                    profile.address, 
+                    profile.passport,
+                    profile.birthday,
+                    profile.gender,
+                    profile.organization,
+                    profile.name,
+                    profile.surname,
+                    profile.patronymic,
+                    profile.insurance)
+            except:
+                return None
+
 class ServiceManager:
     
     def __init__(self, session, services=[]) -> None:

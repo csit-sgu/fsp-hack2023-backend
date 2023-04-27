@@ -3,6 +3,8 @@ from db.models import Claims
 
 from datetime import datetime
 
+from db.models import Gender
+
 @dataclass
 class User:
   email: str
@@ -16,12 +18,16 @@ class Event:
   date_ended: str
   location: str
   about: str
-  
-  # def __post_init__(self):
-    # self.date_started = datetime.strptime(self.date_started, '%Y/%m/%d %H:%M:%S')
-    # self.date_ended = datetime.strptime(self.date_ended, '%Y/%m/%d %H:%M:%S')
     
-    
-# @dataclass
-# class Profile:
-#   id: 
+@dataclass
+class Profile:
+  phone: str
+  address: str
+  passport: str
+  birthday: datetime.date
+  gender: Gender
+  organization: str
+  name: str
+  surname: str
+  patronymic: str
+  insurance: str
