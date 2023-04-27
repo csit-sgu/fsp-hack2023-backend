@@ -71,11 +71,12 @@ class Profile(Base):
     birthday = Column(Date(), nullable=False)
     gender = Column(SQLEnum(Gender), nullable=True)
     organization = Column(String(255), nullable=False)
-    skills = Column(Text, nullable=False)
+    skills_FK = Column(Integer, nullable=True)
     about = Column(Text, nullable=True)
     name = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
     patronymic = Column(String(255), nullable=True)
+    insurance = Column(String(16), nullable=False)
 
 class User(Base):
     __tablename__ = 'users'

@@ -6,13 +6,11 @@ from flask_cors import CORS
 
 from db.utils import init_connection
 from utils import  hash_password
-from service import ServiceManager, UserService, EventService
+from service import ServiceManager, UserService, EventService, ProfileService
 
 from sqlalchemy import Row
 
 from entity import User, Event
-
-from datetime import datetime
 
 from typing import List
 
@@ -128,5 +126,28 @@ def get_event():
             events.append(new_event.__dict__)
             
         return json.dumps(events), 200
+    except Exception as e:
+        abort(400, e)
+        
+        
+@app.get('/profile/<email>')
+def get_profile():
+    
+    profile_service: ProfileService = services.get(ProfileService)
+    
+    try:
+        result: List[Row] = profile_service.get(request.args['email'])
+        return json.dumps(result.__dict__), 200
+    except Exception as e:
+        abort(400, e)
+        
+@app.post('/profile')
+def update_profile():
+    
+    profile_service: ProfileService = services.get(ProfileService)
+    
+    try:
+        result: List[Row] = profile_service.update()
+        return json.dumps(result.__dict__), 200
     except Exception as e:
         abort(400, e)
