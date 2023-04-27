@@ -17,13 +17,7 @@
 }
 ```
 
-## `GET /events`
-```json
-{
-  "page" : 3,
-  "per_page": 15
-}
-```
+## `GET /events&page=3&per_page=15`
 
 ## `POST /events`
 ```json
