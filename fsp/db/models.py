@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import String, Integer, Column, DateTime,  Enum
+from sqlalchemy import String, Integer, Column, DateTime,  Enum, LargeBinary
 from datetime import datetime
 from enum import Enum
 
@@ -19,7 +19,7 @@ class User(Base):
     date_reg = Column(DateTime(), default=datetime.now, nullable=False)
     date_login = Column(DateTime(), default=datetime.now, 
             onupdate=datetime.now, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(LargeBinary, nullable=False)
     
     athlete_FK = Column(Integer, nullable=True)
     representative_FK = Column(Integer, nullable=True)

@@ -5,5 +5,4 @@ from dataclasses import dataclass
 class User:
   email: str
   password: str
-  first_name: int = None
-  last_name: int = None
+  claims: list = None

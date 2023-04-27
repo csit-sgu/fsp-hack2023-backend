@@ -3,6 +3,8 @@ from sqlalchemy import select
 from entity import User
 from db.models import User as UserDB
 
+from sqlalchemy import Row
+
 from sqlalchemy.exc import NoResultFound
 
 class Service():
@@ -21,14 +23,15 @@ class UserService(Service):
     def __init__(self, session):
         super().__init__(UserDB, session)
 
-    def get_by_login(self, login: str):
+    def get_by_login(self, email: str) -> User:
         with self._session() as session:
-            try:
-                user: UserDB = session.execute(select(self._T).where(self._T.login == login)).one()
-            except NoResultFound:
-                return None 
-            return User(user.email, user.password)
-        
+            row = session.execute(select(self._T).where(self._T.email == email)).fetchone()
+            if row is not None:
+                
+                return User(row[0].email, row[0].hashed_password)
+            else:
+                return None
+            
     def add(self, user: User) -> bool:
         print(user.email, user.password)
         model = UserDB(
