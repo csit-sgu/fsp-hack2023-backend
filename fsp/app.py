@@ -39,18 +39,14 @@ def login():
     user_service = services.get(UserService)
     
     body = request.json
-    
-    make_default_asserts(body)
         
     password = body['password']
     email = body['email']
         
     user = user_service.get_by_login(email)
-
-    hashed_password = user.password
     
     if user is None or not bcrypt.checkpw(password.encode('utf-8'), 
-                                          hashed_password):
+                                          user.password):
         
         abort(400, "Пользователь не существует или не найден")
 
@@ -73,7 +69,6 @@ def register():
     user_service = services.get(UserService)
 
     body = dict(request.json)
-    make_default_asserts(body)
     
     user: User = user_service.get_by_login(body['email'])
 

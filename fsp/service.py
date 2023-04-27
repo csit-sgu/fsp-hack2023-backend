@@ -23,7 +23,6 @@ class UserService(Service):
         with self._session() as session:
             row = session.execute(select(self._T).where(self._T.email == email)).fetchone()
             if row is not None:
-                
                 return User(row[0].email, row[0].hashed_password)
             else:
                 return None
