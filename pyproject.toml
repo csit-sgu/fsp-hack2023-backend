@@ -4,7 +4,6 @@ version = "0.1.0"
 description = ""
 authors = ["Nikita Rydanov <wrongwayboyy@gmail.com>"]
 readme = "README.md"
-packages = [{include = "ssu_hackaton_backend2023"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
