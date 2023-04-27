@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
-from entity import User
-from db.models import User as UserDB
+from entity import User, Event
+from db.models import User as UserDB, Event as EventDB
 
 class Service():
 
@@ -28,8 +28,7 @@ class UserService(Service):
             else:
                 return None
             
-    def add(self, user: User) -> bool:
-        print(user.email, user.password)
+    def add(self, user: User):
         model = UserDB(
             hashed_password=user.password,
             email=user.email
@@ -38,4 +37,33 @@ class UserService(Service):
         with self._session() as session:
             session.add(model)
             session.commit()
-
+            
+class EventService(Service):
+    
+    def __init__(self, session):
+        super().__init__(EventDB, session)
+        
+    def add(self, event: Event):
+        with self._session as session:
+            session.add(event)
+            session.commit()
+            
+    def get(self, page, per_page):
+        with self._session as session:
+            result = session.execute(select(self._T)
+                .offset(page * per_page) 
+                .limit(per_page)).all()
+            
+            return result
+    
+class ServiceManager:
+    
+    def __init__(self, session, services=[]) -> None:
+        self.services = dict(zip(services, map(lambda service: service(session), services)))
+        self.session = session
+          
+    def get(self, required_type):
+        if required_type not in self.services:
+            self.services.update({required_type : required_type(self.session)})
+        
+        return self.services[required_type]

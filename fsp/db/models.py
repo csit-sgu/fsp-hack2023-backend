@@ -6,14 +6,18 @@ from sqlalchemy import Enum as SQLEnum
 from datetime import datetime
 from enum import Enum
 
+from dataclasses import dataclass
+
 Base = declarative_base()
 
+@dataclass
 class Claims(Enum):
     ATHLETE = 1
     REPRESENTATIVE = 2
     ADMINISTRATOR =  3
     PARTNER = 4
-
+    
+    
 class Gender(Enum):
     MALE = 1
     FEMALE = 2
