@@ -1,7 +1,9 @@
+import json
+
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import String, Integer, Column, DateTime, \
         LargeBinary, Text, ForeignKey, Date, PrimaryKeyConstraint
-        
+
 from sqlalchemy import Enum as SQLEnum
 from datetime import datetime
 from enum import Enum
@@ -96,8 +98,8 @@ class Event(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String(255), nullable=False)
     date_create = Column(DateTime, default=datetime.now().date, nullable=False)
-    date_start = Column(DateTime, nullable=True)
-    date_end = Column(DateTime, nullable=True)
+    date_started = Column(DateTime, nullable=True)
+    date_ended = Column(DateTime, nullable=True)
     location = Column(String(255), nullable=True)
     about = Column(String(255), nullable=True)
 

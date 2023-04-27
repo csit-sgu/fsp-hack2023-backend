@@ -12,11 +12,16 @@ class User:
 @dataclass
 class Event:
   name: str
-  date_started: datetime
-  date_ended: datetime
+  date_started: str
+  date_ended: str
   location: str
   about: str
   
-  def __post_init__(self):
-    self.date_started = datetime.strptime(self.date_started, '%y/%m/%d %H:%M:%S')
-    self.date_ended = datetime.strptime(self.date_ended, '%y/%m/%d %H:%M:%S')
+  # def __post_init__(self):
+    # self.date_started = datetime.strptime(self.date_started, '%Y/%m/%d %H:%M:%S')
+    # self.date_ended = datetime.strptime(self.date_ended, '%Y/%m/%d %H:%M:%S')
+    
+    
+# @dataclass
+# class Profile:
+#   id: 

@@ -8,7 +8,13 @@ from db.utils import init_connection
 from utils import  hash_password
 from service import ServiceManager, UserService, EventService
 
+from sqlalchemy import Row
+
 from entity import User, Event
+
+from datetime import datetime
+
+from typing import List
 
 import bcrypt
 
@@ -94,7 +100,6 @@ def register():
 def add_event():
     
     event_service: EventService = services.get(EventService)
-    
     body = dict(request.json)
     
     try:
@@ -102,16 +107,26 @@ def add_event():
     except Exception as e:
         abort(400, e)
         
+    return ('', 201)
+        
 @app.get('/events')
 def get_event():
     
     event_service: EventService = services.get(EventService)
-    
-    page = request.args.get('page')
-    per_page = request.args.get('per_page')
+    page = int(request.args.get('page'))
+    per_page = int(request.args.get('per_page'))
     
     try:
-        response = event_service.get(page, per_page)
-        return response
+        result: List[Row] = event_service.get(page, per_page)
+        
+        events = []
+        for row in result:
+            event = row[0]
+            new_event = Event(
+                event.name, str(event.date_started), str(event.date_ended),
+                event.location, event.about)
+            events.append(new_event.__dict__)
+            
+        return json.dumps(events), 200
     except Exception as e:
         abort(400, e)
