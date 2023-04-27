@@ -83,6 +83,8 @@ async def register():
 
     hashed_password = TODO_hash_password(password)
     
+    
+
     user = TODO_create_new_user(login, hashed_password, ...)
     await TODO_add_to_database(user)
 
