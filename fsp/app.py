@@ -5,7 +5,7 @@ from flask import Flask, request, session, abort
 from flask_cors import CORS
 
 from db.utils import init_connection
-from utils import  hash_password, make_default_asserts
+from utils import  hash_password
 from service import ServiceManager, UserService, EventService
 
 from entity import User, Event
