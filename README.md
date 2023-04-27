@@ -28,9 +28,10 @@
 ## `POST /events`
 ```json
 {
-  "date_started": "yyyy-mm-dd",
-  "date_ended": "yyyy-mm-dd",
-  "location": "Some location",
-  "about": "Some description"
+  "name" : "Some interesting name",
+  "date_started" : "%y/%m/%d %H:%M:%S",
+  "date_ended" : "%y/%m/%d %H:%M:%S",
+  "location" : "Some location",
+  "about" : "Some description"
 }
 ```

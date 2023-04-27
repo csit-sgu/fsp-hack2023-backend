@@ -95,9 +95,9 @@ class Event(Base):
     
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String(255), nullable=False)
-    date_create = Column(Date, default=datetime.now().date(), nullable=False)
-    date_start = Column(Date, nullable=True)
-    date_end = Column(Date, nullable=True)
+    date_create = Column(DateTime, default=datetime.now().date, nullable=False)
+    date_start = Column(DateTime, nullable=True)
+    date_end = Column(DateTime, nullable=True)
     location = Column(String(255), nullable=True)
     about = Column(String(255), nullable=True)
 
