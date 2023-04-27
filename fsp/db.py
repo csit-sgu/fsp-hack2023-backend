@@ -12,15 +12,3 @@ def init_connection(conn_string):
   MetaData(engine).create_all()
   
   return engine, async_session
-
-engine, async_session = init_connection("postgresql+asyncpg://fsp:fsp@localhost/fsp")
-
-
-
-
-
-
-
-
-
-
