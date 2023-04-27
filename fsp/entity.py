@@ -5,5 +5,5 @@ from dataclasses import dataclass
 class User:
   login: str
   password: str
-  first_name: int
-  last_name: int
+  first_name: int = None
+  last_name: int = None
