@@ -11,6 +11,7 @@ from .db.models import Event
 from .entity import User, Claim
 from .middleware import CheckFields, auth_required
 from .token import JWT
+from .logger import logger
 
 import bcrypt
 
@@ -18,6 +19,8 @@ app = Flask(__name__)
 app.wsgi_app = CheckFields(app.wsgi_app) # проверка на пустоту JSON-объектов
 
 CORS(app)
+
+log = logger(app)
 
 secret = os.environ.get('SECRET')
 if secret is None:
