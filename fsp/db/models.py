@@ -21,18 +21,18 @@ class Claim(Enum):
     
     
 class Gender(Enum):
-    MALE = 1
-    FEMALE = 2
+    MALE = "male"
+    FEMALE = "female"
 
 class Role(Enum):
-    MEMBER = 1
-    LEAD = 2
+    MEMBER = "member"
+    LEAD = "lead"
 
 class State(Enum):
-    WAIT = 1
-    CHANGES_NEEDED = 2
-    REJECT = 3 
-    CONFIRMED = 4
+    WAIT = "wait"
+    CHANGES_NEEDED = "changes_needed"
+    REJECT = "reject"
+    CONFIRMED = "confirmed"
 
 class Team(Base):
     __tablename__ = 'team'
