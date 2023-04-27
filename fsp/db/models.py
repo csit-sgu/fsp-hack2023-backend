@@ -13,7 +13,7 @@ from dataclasses import dataclass
 Base = declarative_base()
 
 @dataclass
-class Claims(Enum):
+class Claim(Enum):
     ATHLETE = 1
     REPRESENTATIVE = 2
     ADMINISTRATOR =  3
@@ -45,9 +45,19 @@ class Team(Base):
 class Athlete(Base):
     __tablename__ = 'athlete'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    team_FK = Column(Integer, ForeignKey(Team.id), nullable=False)
+    team_FK = Column(Integer, ForeignKey(Team.id), nullable=True)
     rating = Column(Integer, nullable=True)
     role = Column(SQLEnum(Role), nullable=False)
+
+class AthleteTeams(Base):
+    __tablename__ = 'athlete_teams'
+    athlete_id_FK = Column(Integer, primary_key=True, nullable=False)
+    team_id_FK = Column(Integer, primary_key=True, nullable=False)
+    role = Column(SQLEnum(Role), nullable=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint(athlete_id_FK, team_id_FK), 
+    )
 
 class Admin(Base):
     __tablename__ = 'admin'

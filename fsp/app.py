@@ -1,23 +1,30 @@
 import os
-import json
 
 from flask import Flask, request, session, abort
 from flask_cors import CORS
 
-from db.utils import init_connection
-from utils import  hash_password
-from service import ServiceManager, UserService, EventService, ProfileService
+import json
+
+from .db.utils import init_connection
+from .utils import hash_password
+from .service import ServiceManager, UserService, EventService, ProfileService
+from .db.utils import init_connection
+from .utils import  hash_password
 
 from sqlalchemy import Row
 
-from entity import User, Event
+from .db.models import Event
+from .entity import User, Claim
+from .middleware import CheckFields, auth_required
+from .token import JWT
 
 from typing import List
 
 import bcrypt
 
 app = Flask(__name__)
-CORS(app)
+# app.wsgi_app = CheckFields(app.wsgi_app) # проверка на пустоту JSON-объектов
+CORS(app, supports_credentials=True)
 
 secret = os.environ.get('SECRET')
 if secret is None:
@@ -30,73 +37,62 @@ services = ServiceManager(sess)
 
 @app.post('/auth/login')
 def login():
-    """
-    Аутентифицирует пользователя по `login` и `password`.
-    Проверяет предоставленный логин, в случае успеха
-    устанавливает поля `login` и `claims` во Flask
-    session-куки.
-
-    400 Bad Request, если логин неверный или пользователя с
-    именем `login` не существует.
-    """
-    
     user_service = services.get(UserService)
     
     body = request.json
-        
     password = body['password']
     email = body['email']
         
-    user = user_service.get_by_login(email)
+    user: User = user_service.get_by_login(email)
     
     if user is None or not bcrypt.checkpw(password.encode('utf-8'), 
                                           user.password):
         
         abort(400, "Пользователь не существует или не найден")
-
-    session['email'] = user.email
-    session['claims'] = user.claims
     
-    return '', 200
+    
+    claims = list(map(lambda x: x.value, user.claims))
+    
+    token = JWT.create({'email': user.email, 'claims': claims})
+
+    return {'token': token}, 200
 
 @app.post('/auth/register')
 def register():
-    """
-    Регистрирует нового пользователя по `login` и `password`.
-    Возможно добавить `first_name`, `last_name` и другую
-    обязательную информацию.
-    
-    При успешной регистрации ответ 201 Created.
-    Если имя занято, возвращает 400 Bad Request.
-    """
-    
     user_service = services.get(UserService)
+    profile_service: ProfileService = services.get(ProfileService)
 
     body = dict(request.json)
-    
-    user: User = user_service.get_by_login(body['email'])
+    email = body['email']
+    user: User = user_service.get_by_login(email)
 
-    # Если пользователь уже существует
+    
     if user is not None:
         abort(400, "Этот пользователь уже существует")
 
     body['password'] = hash_password(body['password'])
 
     try:
-        user = User(**body)
-        ok = user_service.add(user)
-    except NameError:
-        abort(400, "Неверный набор аргументов")
-    except Exception:
-        abort(400, "Непредвиденная ошибка на сервере")
+        user_service.add(User(**body))
+        ok = True
+    except NameError as e:
+        abort(400, f"Неверный набор аргументов: {e}")
+    except Exception as e:
+        abort(500, f"Что-то пошло не так: {e}")
+        
+    profile_service: ProfileService = services.get(ProfileService)
     
-    ok = True
-
+    try:
+        profile_service.update(email, **body['profile'])
+    except Exception as e:
+        abort(500, f"Что-то пошло не так: {e}")
+        
     return ('', 201) if ok else ('', 400)
 
+@auth_required([Claim.ADMINISTRATOR, Claim.REPRESENTATIVE, Claim.PARTNER])
 @app.post('/events')
-def add_event():
-    
+def add_event(email):
+
     event_service: EventService = services.get(EventService)
     body = dict(request.json)
     
@@ -104,11 +100,13 @@ def add_event():
         event_service.add(Event(**body))
     except Exception as e:
         abort(400, e)
-        
+
     return ('', 201)
-        
+
+@auth_required([Claim.ADMINISTRATOR, Claim.PARTNER, 
+                Claim.ATHLETE, Claim.REPRESENTATIVE])
 @app.get('/events')
-def get_event():
+def get_event(email):
     
     event_service: EventService = services.get(EventService)
     page = int(request.args.get('page'))
@@ -129,9 +127,9 @@ def get_event():
     except Exception as e:
         abort(400, e)
         
-        
+@auth_required([Claim.ADMINISTRATOR])
 @app.get('/profile/<email>')
-def get_profile():
+def get_profile(email):
     
     profile_service: ProfileService = services.get(ProfileService)
     
@@ -141,13 +139,15 @@ def get_profile():
     except Exception as e:
         abort(400, e)
         
+@auth_required([Claim.ADMINISTRATOR])
 @app.post('/profile')
-def update_profile():
+def update_profile(email):
     
     profile_service: ProfileService = services.get(ProfileService)
     
     try:
-        result: List[Row] = profile_service.update()
-        return json.dumps(result.__dict__), 200
+        profile_service.update()
     except Exception as e:
         abort(400, e)
+        
+    return ('', 201)

@@ -1,9 +1,10 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 
-from entity import User, Event, Profile
-from db.models import User as UserDB, \
-    Event as EventDB, \
-    Profile as ProfileDB
+from .entity import User, Event, Profile
+from .db.models import User as UserDB, \
+        Event as EventDB, \
+        Profile as ProfileDB
+from .db.models import Claim, Athlete, Admin, Representative, Partner
 
 class Service():
 
@@ -15,6 +16,33 @@ class Service():
         with self._session() as session:
             user = session.execute(select(self._T).where(self._T.guid == guid))
             return user
+
+class ClaimService():
+
+    def __init__(self, session):
+        self._session = session
+    
+    def set_role_by_claims(self, db_user: UserDB, claims: list[Claim]):
+        with self._session() as session:
+            if Claim.ATHLETE in claims:
+                athlete = Athlete()
+                session.add(athlete)
+                db_user.athlete_FK = athlete.id
+            if Claim.ADMINISTRATOR in claims:
+                admin = Admin()
+                session.add(admin)
+                db_user.administrator_FK = admin.id
+            if Claim.REPRESENTATIVE in claims:
+                repr = Representative()
+                session.add(repr)
+                db_user.representative_FK = repr.id
+            if Claim.PARTNER in claims:
+                partner = Partner()
+                session.add(partner)
+                db_user.partner_FK = partner.id
+            print(f'Set foreign keys for the user: {db_user}')
+            session.commit()
+
 
 class UserService(Service):
 

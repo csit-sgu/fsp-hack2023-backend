@@ -1,15 +1,13 @@
 from dataclasses import dataclass, field
-from db.models import Claims
-
 from datetime import datetime
 
-from db.models import Gender
+from .db.models import Claim, Gender
 
 @dataclass
 class User:
   email: str
   password: str
-  claims: list = field(default_factory=lambda: [Claims.ATHLETE])
+  claims: list = field(default_factory=lambda: [Claim.ATHLETE])
   
 @dataclass
 class Event:
