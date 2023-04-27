@@ -34,24 +34,14 @@ def login():
     именем `login` не существует.
     """
 
-    # Content-Type не равен application/json
-    body = request.json
-    if body is None: 
-        abort(400)
-        
+    body = request.json        
     password = body['password']
     email = body['email']
-
-    # логин или пароль не предоставлены
-    if is_none_or_empty(email) or is_none_or_empty(password):
-        abort(400)
-
     
     user = user_service.get_by_login(email)
     # пользователя с таким именем не существует
     if user is None:
         abort(400)
-
 
     hashed_password = user.password
     
@@ -76,20 +66,13 @@ def register():
     """
 
     body = dict(request.json)
-    # Content-Type не равен application/json
-    if body is None: 
-        abort(400)
 
     # username или пароль не предоставлены
     user: User = user_service.get_by_login(body['email'])
 
-    # # пользователя с таким именем существует
+    # пользователя с таким именем существует
     if user is not None:
         print('aboba')
-        abort(400)
-
-    if any([is_none_or_empty(v) for v in body.values()]):
-        print('aboba2')
         abort(400)
 
     body['password'] = hash_password(body['password'])
