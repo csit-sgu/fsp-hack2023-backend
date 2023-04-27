@@ -3,10 +3,6 @@ from sqlalchemy import select
 from entity import User
 from db.models import User as UserDB
 
-from sqlalchemy import Row
-
-from sqlalchemy.exc import NoResultFound
-
 class Service():
 
     def __init__(self, T, session):

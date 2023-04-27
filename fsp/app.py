@@ -8,7 +8,6 @@ from service import UserService
 from sqlalchemy import MetaData
 
 from entity import User
-from db.base import Base
 
 import bcrypt
 
