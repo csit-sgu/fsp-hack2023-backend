@@ -1,17 +1,19 @@
 import os
+import json
+
 from flask import Flask, request, session, abort
+from flask_cors import CORS
 
 from db.utils import init_connection
-from utils import is_none_or_empty, hash_password
-from service import UserService
+from utils import  hash_password, make_default_asserts
+from service import ServiceManager, UserService, EventService
 
-from sqlalchemy import MetaData
-
-from entity import User
+from entity import User, Event
 
 import bcrypt
 
 app = Flask(__name__)
+CORS(app)
 
 secret = os.environ.get('SECRET')
 if secret is None:
@@ -20,7 +22,7 @@ app.secret_key = secret
 
 engine, sess = init_connection('postgresql+psycopg2://postgres:postgres@localhost/postgres')
 
-user_service = UserService(sess)
+services = ServiceManager(sess)
 
 @app.post('/auth/login')
 def login():
@@ -33,21 +35,21 @@ def login():
     400 Bad Request, если логин неверный или пользователя с
     именем `login` не существует.
     """
+    
+    user_service = services.get(UserService)
+    body = request.json
 
-    body = request.json        
     password = body['password']
     email = body['email']
-    
+        
     user = user_service.get_by_login(email)
-    # пользователя с таким именем не существует
-    if user is None:
-        abort(400)
 
     hashed_password = user.password
     
-    # пароль неверный
-    if not bcrypt.checkpw(password.encode('utf-8'), hashed_password):
-        abort(400)
+    if user is None or not bcrypt.checkpw(password.encode('utf-8'), 
+                                          hashed_password):
+        
+        abort(400, "Пользователь не существует или не найден")
 
     session['email'] = user.email
     session['claims'] = user.claims
@@ -64,26 +66,51 @@ def register():
     При успешной регистрации ответ 201 Created.
     Если имя занято, возвращает 400 Bad Request.
     """
-
+    
+    user_service = services.get(UserService)
     body = dict(request.json)
-
-    # username или пароль не предоставлены
     user: User = user_service.get_by_login(body['email'])
 
-    # пользователя с таким именем существует
+    # Если пользователь уже существует
     if user is not None:
-        print('aboba')
-        abort(400)
+        abort(400, "Этот пользователь уже существует")
 
     body['password'] = hash_password(body['password'])
 
     try:
         user = User(**body)
         ok = user_service.add(user)
-    except Exception as e:
-        print(e)
-        abort(400)
+    except NameError:
+        abort(400, "Неверный набор аргументов")
+    except Exception:
+        abort(400, "Непредвиденная ошибка на сервере")
     
     ok = True
 
     return ('', 201) if ok else ('', 400)
+
+@app.post('/events')
+def add_event():
+    
+    event_service: EventService = services.get(EventService)
+    
+    body = dict(request.json)
+    
+    try:
+        event_service.add(Event(**body))
+    except Exception as e:
+        abort(400, e)
+        
+@app.get('/events')
+def get_event():
+    
+    event_service: EventService = services.get(EventService)
+    
+    page = request.args.get('page')
+    per_page = request.args.get('per_page')
+    
+    try:
+        response = event_service.get(page, per_page)
+        return response
+    except Exception as e:
+        abort(400, e)
