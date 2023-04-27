@@ -35,8 +35,6 @@ class UserService(Service):
             email=user.email
         )
 
-        
-
         with self._session() as session:
             session.add(model)
             session.commit()
