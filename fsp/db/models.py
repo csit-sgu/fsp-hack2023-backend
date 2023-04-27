@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import String, Integer, Column, DateTime,  Enum, Date, ForeignKey
-from datetime import datetime, date
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import String, Integer, Column, DateTime,  Enum, LargeBinary
+from datetime import datetime
 from enum import Enum
+
+Base = declarative_base()
 
 class Claims(Enum):
     ATHLETE = 1
