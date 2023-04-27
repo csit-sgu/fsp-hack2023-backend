@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from .db.models import Claim
+from .db.models import Claim, Gender
 
 @dataclass
 class User:
@@ -12,12 +12,20 @@ class User:
 @dataclass
 class Event:
   name: str
-  date_started: datetime
-  date_ended: datetime
+  date_started: str
+  date_ended: str
   location: str
   about: str
-  
-  def __post_init__(self):
-    self.date_started = datetime.strptime(self.date_started, '%y/%m/%d %H:%M:%S')
-    self.date_ended = datetime.strptime(self.date_ended, '%y/%m/%d %H:%M:%S')
-  
+    
+@dataclass
+class Profile:
+  phone: str
+  address: str
+  passport: str
+  birthday: datetime.date
+  gender: Gender
+  organization: str
+  name: str
+  surname: str
+  patronymic: str
+  insurance: str

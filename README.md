@@ -17,13 +17,7 @@
 }
 ```
 
-## `GET /events`
-```json
-{
-  "page" : 3,
-  "per_page": 15
-}
-```
+## `GET /events&page=3&per_page=15`
 
 ## `POST /events`
 ```json
@@ -35,3 +29,22 @@
   "about" : "Some description"
 }
 ```
+
+## `POST /profile`
+```json
+{
+  "phone": "string",
+  "address": "string",
+  "passport": "string",
+  "birthday": "yyyy-mm-dd",
+  "gender": "string",
+  "organization": "string",
+  "name": "string",
+  "surname": "string",
+  "patronymic": "string",
+  "insurance": "string"
+}
+```
+
+## `GET /profile/<url parameter>`
+

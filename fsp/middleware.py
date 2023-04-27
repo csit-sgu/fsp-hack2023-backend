@@ -1,5 +1,4 @@
 from flask import Request, abort, request
-import json
 
 from .db.models import Claim
 from .utils import is_none_or_empty
@@ -29,7 +28,7 @@ def auth_required(whitelist: list[Claim]):
             if data is None:
                 return 'Недействительный токен', 401
             
-            if any([wl in data['claims'] for wl in whitelist]):
-                return f(data['email'], *args, **kwargs)            
+            if any([str(wl.value) in data['claims'] for wl in whitelist]):
+                return f(data['email'], *args, **kwargs)
         return _wrapper
     return decorator
