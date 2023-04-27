@@ -60,24 +60,33 @@ def login():
 @app.post('/auth/register')
 def register():
     user_service = services.get(UserService)
+    profile_service: ProfileService = services.get(ProfileService)
 
     body = dict(request.json)
-    user: User = user_service.get_by_login(body['email'])
+    email = body['email']
+    user: User = user_service.get_by_login(email)
 
-    # Если пользователь уже существует
+    
     if user is not None:
         abort(400, "Этот пользователь уже существует")
 
     body['password'] = hash_password(body['password'])
 
     try:
-        user = User(**body)
-        ok = user_service.add(user)
-    except NameError:
-        abort(400, "Неверный набор аргументов")
-    except Exception:
-        abort(500, "Непредвиденная ошибка на сервере")
-
+        user_service.add(User(**body))
+        ok = True
+    except NameError as e:
+        abort(400, f"Неверный набор аргументов: {e}")
+    except Exception as e:
+        abort(500, f"Что-то пошло не так: {e}")
+        
+    profile_service: ProfileService = services.get(ProfileService)
+    
+    try:
+        profile_service.update(email, **body['profile'])
+    except Exception as e:
+        abort(500, f"Что-то пошло не так: {e}")
+        
     return ('', 201) if ok else ('', 400)
 
 @auth_required([Claim.ADMINISTRATOR, Claim.REPRESENTATIVE, Claim.PARTNER])
@@ -118,7 +127,6 @@ def get_event(email):
     except Exception as e:
         abort(400, e)
         
-  
 @auth_required([Claim.ADMINISTRATOR])
 @app.get('/profile/<email>')
 def get_profile(email):
@@ -138,7 +146,8 @@ def update_profile(email):
     profile_service: ProfileService = services.get(ProfileService)
     
     try:
-        result: List[Row] = profile_service.update()
-        return json.dumps(result.__dict__), 200
+        profile_service.update()
     except Exception as e:
         abort(400, e)
+        
+    return ('', 201)
