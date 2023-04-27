@@ -20,7 +20,7 @@ app.secret_key = secret
 
 engine, sess = init_connection('postgresql+psycopg2://postgres:postgres@localhost/postgres')
 
-services = ServiceManager()
+services = ServiceManager(sess)
 
 @app.post('/auth/login')
 def login():
@@ -98,7 +98,7 @@ def register():
 
     return ('', 201) if ok else ('', 400)
 
-@app.post('/events/add')
+@app.post('/events')
 def add_event():
     
     event_service: EventService = ServiceManager.get(EventService)
@@ -111,8 +111,8 @@ def add_event():
     except Exception as e:
         abort(400, e)
         
-@app.post('/events/get')
-def add_event():
+@app.get('/events')
+def get_event():
     
     event_service: EventService = ServiceManager.get(EventService)
     
