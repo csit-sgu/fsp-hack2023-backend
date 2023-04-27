@@ -10,11 +10,14 @@ if _SECRET is None:
 class JWT:
 
     @staticmethod
-    def create(claims: list[Claim]) -> str:
+    def create(claims: dict) -> str:
         return jwt.encode(claims, _SECRET, algorithm='HS256')
     
     @staticmethod
-    def extract(token: str) -> dict[str, str] | None:
+    def extract(token: str | None) -> dict | None:
+        if token is None:
+            return None
+        
         try:
             return jwt.decode(token, _SECRET, algorithms=['HS256'])
         except jwt.InvalidTokenError as e:

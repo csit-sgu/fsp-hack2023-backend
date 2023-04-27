@@ -1,15 +1,16 @@
 import os
-import json
 
 from flask import Flask, request, session, abort
 from flask_cors import CORS
 
 from .db.utils import init_connection
 from .utils import is_none_or_empty, hash_password
-from .service import UserService
+from .service import UserService, EventService, ServiceManager
 
-from .entity import User
-from .middleware import CheckFields
+from .db.models import Event
+from .entity import User, Claim
+from .middleware import CheckFields, auth_required
+from .token import JWT
 
 import bcrypt
 
@@ -29,24 +30,13 @@ services = ServiceManager(sess)
 
 @app.post('/auth/login')
 def login():
-    """
-    Аутентифицирует пользователя по `login` и `password`.
-    Проверяет предоставленный логин, в случае успеха
-    устанавливает поля `login` и `claims` во Flask
-    session-куки.
-
-    400 Bad Request, если логин неверный или пользователя с
-    именем `login` не существует.
-    """
-    
     user_service = services.get(UserService)
     
     body = request.json
-        
     password = body['password']
     email = body['email']
         
-    user = user_service.get_by_login(email)
+    user: User = user_service.get_by_login(email)
 
     hashed_password = user.password
     
@@ -55,26 +45,16 @@ def login():
         
         abort(400, "Пользователь не существует или не найден")
 
-    session['email'] = user.email
-    session['claims'] = user.claims
-    
-    return '', 200
+    token = JWT.create({ 'email': user.email, 'claims': user.claims })
+
+    return { 'token': token }, 200
 
 @app.post('/auth/register')
 def register():
-    """
-    Регистрирует нового пользователя по `login` и `password`.
-    Возможно добавить `first_name`, `last_name` и другую
-    обязательную информацию.
-    
-    При успешной регистрации ответ 201 Created.
-    Если имя занято, возвращает 400 Bad Request.
-    """
-    
     user_service = services.get(UserService)
 
     body = dict(request.json)
-    
+
     user: User = user_service.get_by_login(body['email'])
 
     # Если пользователь уже существует
@@ -90,14 +70,13 @@ def register():
         abort(400, "Неверный набор аргументов")
     except Exception:
         abort(400, "Непредвиденная ошибка на сервере")
-    
-    ok = True
 
     return ('', 201) if ok else ('', 400)
 
+@auth_required([Claim.ADMINISTRATOR, Claim.REPRESENTATIVE, Claim.PARTNER])
 @app.post('/events')
-def add_event():
-    
+def add_event(email: str):
+
     event_service: EventService = services.get(EventService)
     
     body = dict(request.json)
@@ -106,9 +85,10 @@ def add_event():
         event_service.add(Event(**body))
     except Exception as e:
         abort(400, e)
-        
+
+@auth_required([Claim.ADMINISTRATOR, Claim.PARTNER, Claim.ATHLETE, Claim.REPRESENTATIVE])
 @app.get('/events')
-def get_event():
+def get_event(email: str):
     
     event_service: EventService = services.get(EventService)
     
