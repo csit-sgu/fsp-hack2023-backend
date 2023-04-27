@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from db.models import Claims
 
-from datetime import date, datetime
+from datetime import datetime
 
 @dataclass
 class User:

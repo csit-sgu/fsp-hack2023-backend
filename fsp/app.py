@@ -46,16 +46,13 @@ def login():
     email = body['email']
         
     user = user_service.get_by_login(email)
-    
-    # пользователя с таким именем не существует
-    if user is None:
-        abort(400, "Пользователя не существует")
-
 
     hashed_password = user.password
     
-    if not bcrypt.checkpw(password.encode('utf-8'), hashed_password):
-        abort(400)
+    if user is None or not bcrypt.checkpw(password.encode('utf-8'), 
+                                          hashed_password):
+        
+        abort(400, "Пользователь не существует или не найден")
 
     session['email'] = user.email
     session['claims'] = user.claims
@@ -89,9 +86,10 @@ def register():
     try:
         user = User(**body)
         ok = user_service.add(user)
-    except Exception as e:
-        print(e)
-        abort(400, e)
+    except NameError:
+        abort(400, "Неверный набор аргументов")
+    except Exception:
+        abort(400, "Непредвиденная ошибка на сервере")
     
     ok = True
 
@@ -105,8 +103,7 @@ def add_event():
     body = dict(request.json)
     
     try:
-        event = Event(**body)
-        response = event_service.add(Event(**body))
+        event_service.add(Event(**body))
     except Exception as e:
         abort(400, e)
         
@@ -118,10 +115,8 @@ def get_event():
     page = request.args.get('page')
     per_page = request.args.get('per_page')
     
-    body = dict(request.json)
-    
     try:
-        event = Event(**body)
         response = event_service.get(page, per_page)
+        return response
     except Exception as e:
         abort(400, e)
