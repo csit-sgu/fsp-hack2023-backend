@@ -1,40 +1,43 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from .entity import User
-from .db.models import User as UserDB
+from entity import User
+from db.models import User as UserDB
 
-import bcrypt
-
-class AsyncService():
+class Service():
 
     def __init__(self, T, session):
         self._T = T
-        self._session: AsyncSession = session
+        self._session = session
 
-    async def get_by_guid(self, guid: int):
-        async with self._session() as session:
-            user = await session.execute(select(self._T).where(self._T.guid == guid))
+    def get_by_guid(self, guid: int):
+        with self._session() as session:
+            user = session.execute(select(self._T).where(self._T.guid == guid))
             return user
 
-class UserService(AsyncService):
+class UserService(Service):
 
-    def __init__(self, T, session):
-        super.__init__(T, session)
+    def __init__(self, session):
+        super().__init__(UserDB, session)
 
-    async def get_by_login(self, login: str):
-        async with self._session() as session:
-            user = await session.execute(select(self._T).where(self._T.login == login))
-            return user
-        
-    async def add(self, user: User):
-        
+    def get_by_login(self, email: str) -> User:
+        with self._session() as session:
+            row = session.execute(select(self._T).where(self._T.email == email)).fetchone()
+            if row is not None:
+                
+                return User(row[0].email, row[0].hashed_password)
+            else:
+                return None
+            
+    def add(self, user: User) -> bool:
+        print(user.email, user.password)
         model = UserDB(
             hashed_password=user.password,
-            email = user.email
+            email=user.email
         )
         
-        async with self._session() as session:
+        # TODO: first_name, last_name
+
+        with self._session() as session:
             session.add(model)
-            await session.commit()
+            session.commit()
 
