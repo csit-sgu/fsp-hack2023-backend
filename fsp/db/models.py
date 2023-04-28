@@ -98,7 +98,7 @@ class Profile(Base):
     birthday = Column(Date(), nullable=False)
     gender = Column(SQLEnum(Gender), nullable=True)
     organization = Column(String(255), nullable=False)
-    skills_FK = Column(Integer, nullable=True)
+    skills = Column(Integer, nullable=True)
     name = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
     patronymic = Column(String(255), nullable=True)
