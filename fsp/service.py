@@ -233,6 +233,14 @@ class AthleteTeamsService:
 
             return rows
 
+    def get_all_by_athlete_id(self, athlete_id: int) -> list[AthleteTeams]:
+        with self._session() as session:
+            rows = session.execute(
+                select(self._T).where(AthleteTeams.athlete_id_FK == athlete_id)
+            ).all()
+
+            return rows
+
     def add(self, athlete_teams: AthleteTeams) -> bool:
         with self._session() as session:
             session.add(athlete_teams)

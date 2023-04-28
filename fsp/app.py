@@ -311,9 +311,9 @@ def get_teams_leaderboard():
 @app.get("/teams/<name>")
 def get_team_info():
     session_id = uuid4()
-    team_service: TeamService = ServiceManager(TeamService)
-    athlete_service: AthleteService = ServiceManager(AthleteService)
-    athlete_teams_service: AthleteTeamsService = ServiceManager(AthleteTeamsService)
+    team_service: TeamService = services.get(TeamService)
+    athlete_service: AthleteService = services.get(AthleteService)
+    athlete_teams_service: AthleteTeamsService = services.get(AthleteTeamsService)
 
     name = request.args["name"]
 
@@ -346,8 +346,8 @@ def create_team():
     if email is None:
         return (401, "Неверный или истекший JSON веб токен")
 
-    team_service: TeamService = ServiceManager(TeamService)
-    athlete_teams_service: AthleteTeamsService = ServiceManager(AthleteTeamsService)
+    team_service: TeamService = services.get(TeamService)
+    athlete_teams_service: AthleteTeamsService = services.get(AthleteTeamsService)
 
     try:
         team = TeamDB(name=body["name"], rating=100)
@@ -383,8 +383,8 @@ def add_athlete_to_the_team():
     if email is None:
         return (401, "Неверный или истекший JSON веб токен")
 
-    team_service: TeamService = ServiceManager(TeamService)
-    athlete_teams_service: AthleteTeamsService = ServiceManager(AthleteTeamsService)
+    team_service: TeamService = services.get(TeamService)
+    athlete_teams_service: AthleteTeamsService = services.get(AthleteTeamsService)
 
     try:
         team_name = request.args['name']
@@ -418,30 +418,45 @@ def add_athlete_to_the_team():
 @auth_required([Claim.ADMINISTRATOR, Claim.ATHLETE, Claim.PARTNER, Claim.REPRESENTATIVE])
 @app.get('/me/profile')
 def get_my_profile():
+    
     session_id = uuid4()
-
     body = dict(request.json)
-    email: str = JWT.extract(body["token"])["email"]
-    if email is None:
-        return (401, "Неверный или истекший JSON веб токен")
 
-    user_service: UserService = ServiceManager(UserService)
-    user: User = user_service.get_by_login(email)
+    try:
+        email: str = JWT.extract(body["token"])["email"]
+        if email is None:
+            return (401, "Неверный или истекший JSON веб токен")
 
-    with sess() as _session:
-        db_user: UserDB = _session.execute(
-            sa.select(UserDB)
-            .where(UserDB.email == user.email)
-        ).fetchone()[0]
+        user_service: UserService = services.get(UserService)
+        athlete_service: AthleteService = services.get(AthleteService)
+        athlete_teams_service: AthleteTeamsService = services.get(AthleteTeamsService)
 
-        if db_user.personal_FK is None:
-            return (500, 'Что-то пошло не так')
+        user: User = user_service.get_by_login(email)
 
-        profile: Profile = _session.execute(
-            sa.select(Profile)
-            .where(Profile.id == db_user.personal_FK)
-        ).fetchone()
-        
+        with sess() as _session:
+            db_user: UserDB = _session.execute(
+                sa.select(UserDB)
+                .where(UserDB.email == user.email)
+            ).fetchone()[0]
+
+            if db_user.personal_FK is None:
+                return (500, 'Что-то пошло не так')
+
+            profile: Profile = _session.execute(
+                sa.select(Profile)
+                .where(Profile.id == db_user.personal_FK)
+            ).fetchone()[0]
+            
+            claims: list[str] = [x.serialize() for x in user.claims]
+            
+            athlete: Athlete = athlete_service.get_by_id(db_user.athlete_FK)
+
+            result: list[Row] = athlete_teams_service.get_all_by_athlete_id(athlete.id)
+            teams: list[Team] = []
+            for athlete_team in result:
+                db_team: TeamDB = _session.execute(sa.select(Team).where(Team.id == athlete_team.team_id_FK)).fetchone()[0]
+                teams.append(Team(**db_team))
+
         return {
             'phone': profile.phone,
             'address': profile.address,
@@ -453,23 +468,15 @@ def get_my_profile():
             'name': profile.name,
             'surname': profile.surname,
             'patronymic': profile.patronymic,
-            'insurance': profile.insurance
+            'insurance': profile.insurance,
+            'claims': claims,
+            'rating': athlete.rating,
+            'email': user.email,
+            'teams': teams,
+            'date_reg': str(db_user.date_reg),
+            'date_login': str(db_user.date_login)
         }, 200
-
-    try:
-        team: TeamDB | None = team_service.get_by_name(name)
-        if team is None:
-            abort(404, "Команда с таким именем не найдена")
-
-        athlete_teams = athlete_teams_service.get_all_by_team_id(team.id)
-
-        athletes = []
-        for t in athlete_teams:
-            a: Athlete = athlete_service.get_by_id(t.athlete_id_FK)
-            athletes.append(a)
-        app.logger.info(f"Информация о команде получена успешно ({session_id})")
-        return {"name": team.name, "rating": team.rating, "athletes": athletes}, 200
-
+    
     except Exception as e:
         error = f"Что-то пошло не так ({session_id})"
         app.logger.error(f"{error}: {e}")

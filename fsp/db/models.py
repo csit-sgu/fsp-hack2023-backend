@@ -28,6 +28,16 @@ class Claim(Enum):
     ADMINISTRATOR = 3
     PARTNER = 4
 
+    def serialize(self) -> str:
+        if self == Claim.ATHLETE:
+            return 'ATHLETE'
+        if self == Claim.REPRESENTATIVE:
+            return 'REPRESENTATIVE'
+        if self == Claim.ADMINISTRATOR:
+            return 'ADMINISTRATOR'
+        if self == Claim.PARTNER:
+            return 'PARTNER'
+
 
 class Gender(Enum):
     MALE = "male"
@@ -59,10 +69,8 @@ class Team(Base):
 class Athlete(Base):
     __tablename__ = "athlete"
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    team_FK = Column(Integer, ForeignKey(Team.id), nullable=True)
     rating = Column(Integer, nullable=True)
     role = Column(SQLEnum(Role), nullable=False)
-
 
 class AthleteTeams(Base):
     __tablename__ = "athlete_teams"
