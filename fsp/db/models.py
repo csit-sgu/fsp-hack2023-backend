@@ -37,7 +37,7 @@ class State(Enum):
 class Team(Base):
     __tablename__ = 'team'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False, unique=True)
     rating = Column(Integer, nullable=True)
     datetime_create = Column(DateTime, default=datetime.now, 
             onupdate=datetime.now, nullable=False)
@@ -58,6 +58,7 @@ class AthleteTeams(Base):
     __table_args__ = (
         PrimaryKeyConstraint(athlete_id_FK, team_id_FK), 
     )
+        
 
 class Admin(Base):
     __tablename__ = 'admin'

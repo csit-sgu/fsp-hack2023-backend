@@ -9,10 +9,12 @@ from .db.utils import init_connection
 from .utils import  hash_password, retrieve_fields
 
 from sqlalchemy import Row
-from .service import ServiceManager, UserService, EventService, ProfileService, RequestService
+from .service import ServiceManager, UserService, AthleteService, \
+        EventService, ProfileService, RequestService, TeamService, \
+        AthleteTeamsService
 from .settings import config
 
-from .db.models import Event
+from .db.models import Event, Athlete, Team
 from .entity import User, Claim, EventRequest
 from .middleware import CheckFields, auth_required
 from .token import JWT
@@ -146,7 +148,7 @@ def get_profile():
         
 @auth_required([Claim.ADMINISTRATOR])
 @app.post('/profile')
-def update_profile(email):
+def update_profile(email: str):
     
     profile_service: ProfileService = services.get(ProfileService)
     body = dict(request.json)
@@ -183,4 +185,102 @@ def get_requests(email):
         requests = request_service.get_requests(email)
         return json.dumps(requests), '201'
     except Exception as e:
+        abort(400, e)
+@auth_required([Claim.ATHLETE, Claim.ADMINISTRATOR, Claim.PARTNER, Claim.REPRESENTATIVE])
+@app.get('/leaderboard/users')
+def get_users_leaderboard(_: str):
+    
+    athlete_service: AthleteService = services.get(AthleteService)
+
+    page = int(request.args.get('page'))
+    per_page = int(request.args.get('per_page'))
+    
+    order = request.args.get('order')
+    if order == 'asc':
+        order = True
+    elif order == 'desc':
+        order = False
+
+    try:
+        result: List[Row] = athlete_service.get(page, per_page, order)
+        
+        athletes = []
+        for row in result:
+            athlete = row[0]
+            new_athlete = Athlete(
+                team_FK=athlete.team_FK,
+                rating=athlete.rating,
+                role=athlete.role
+            )
+            athletes.append(retrieve_fields(new_athlete))
+
+        return json.dumps(athletes), 200
+
+    except Exception as e:
+        print(e)
+        abort(400, e)
+
+@auth_required([Claim.ATHLETE, Claim.ADMINISTRATOR, Claim.PARTNER, Claim.REPRESENTATIVE])
+@app.get('/leaderboard/teams')
+def get_teams_leaderboard(_: str):
+    
+    team_service: TeamService = services.get(TeamService)
+
+    page = int(request.args.get('page'))
+    per_page = int(request.args.get('per_page'))
+    
+    order = request.args.get('order')
+    if order == 'asc':
+        order = True
+    elif order == 'desc':
+        order = False
+
+    try:
+        result: List[Row] = team_service.get(page, per_page, order)
+        
+        teams = []
+        for row in result:
+            team = row[0]
+            new_team = Team(
+                name=team.name,
+                rating=team.rating,
+                datetime_create=str(team.datetime_create)
+            )
+            teams.append(retrieve_fields(new_team))
+
+        return json.dumps(teams), 200
+
+    except Exception as e:
+        print(e)
+        abort(400, e)
+
+@auth_required([Claim.ATHLETE])
+@app.get('/teams/<name>')
+def get_team_info(_: str):
+    team_service: TeamService = ServiceManager(TeamService)
+    athlete_service: AthleteService = ServiceManager(AthleteService)
+    athlete_teams_service: AthleteTeamsService = ServiceManager(AthleteTeamsService)
+
+    name = request.args['name']
+
+    try:
+        team: Team | None = team_service.get_by_name(name)
+        if team is None:
+            abort(404, 'Команда с таким именем не найдена')
+
+        athlete_teams = athlete_teams_service.get_all_by_team_id(team.id)
+
+        athletes = []
+        for t in athlete_teams:
+            a: Athlete = athlete_service.get_by_id(t.athlete_id_FK)
+            athletes.append(a)
+
+        return {
+            'name': team.name,
+            'rating': team.rating,
+            'athletes': athletes
+        }, 200
+
+    except Exception as e:
+        print(e)
         abort(400, e)

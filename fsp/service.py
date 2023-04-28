@@ -5,7 +5,7 @@ from .db.models import User as UserDB, \
         Event as EventDB, \
         Profile as ProfileDB, \
         EventRequest as EventRequestDB
-from .db.models import Claim, Athlete, Admin, Representative, Partner
+from .db.models import Claim, Athlete, Admin, Representative, Partner, Team, AthleteTeams
 
 from .utils import retrieve_fields, collect_results
 
@@ -15,10 +15,13 @@ class Service():
         self._T = T
         self._session = session
 
-    def get_by_guid(self, guid: int):
+    def get_by_id(self, id: int):
         with self._session() as session:
-            user = session.execute(select(self._T).where(self._T.guid == guid))
-            return user
+            entity = session.execute(select(self._T).where(self._T.id == id)).fethone()
+            if entity[0] is not None:
+                return entity[0]
+            else:
+                return None
 
 
 class ClaimService():
@@ -135,8 +138,8 @@ class ProfileService(Service):
             
 class RequestService(Service):
     def __init__(self, session) -> None:
-        super().__init__(RequestService, session)
-        
+        super().__init__(EventRequestDB, session)
+
     
     def add(self, event_request: EventRequest):
         with self._session() as session:
@@ -154,6 +157,64 @@ class RequestService(Service):
         
         return collect_results(self._T, rows)
         
+    def add(self, event_request):
+        pass
+
+
+class AthleteService(Service):
+    def __init__(self, session) -> None:
+        super().__init__(Athlete, session)
+
+    def get(self, page: int, per_page: int, order: bool = False) -> list[Athlete]:
+        with self._session() as session:
+            result = session.execute(
+                select(self._T)
+                .order_by(Athlete.rating if order else Athlete.rating.desc())
+                .offset(page * per_page)
+                .limit(per_page)
+            ).all()
+            
+            return result
+
+class TeamService(Service):
+    def __init__(self, session) -> None:
+        super().__init__(Team, session)
+
+    def get(self, page: int, per_page: int, order: bool = False) -> list[Team]:
+        with self._session() as session:
+            result = session.execute(
+                select(self._T)
+                .order_by(Team.rating if order else Team.rating.desc())
+                .offset(page * per_page)
+                .limit(per_page)
+            ).all()
+            
+            return result
+        
+    def get_by_name(self, name: str) -> Team | None:
+        with self._session() as session:
+            rows = session.execute(
+                select(self._T).where(Team.name == name)
+            ).fetchone()
+
+            if rows[0] is not None:
+                return rows[0]
+            else:
+                return None
+        
+class AthleteTeamsService:
+
+    def __init__(self, session) -> None:
+        super().__init__(Team, session)
+
+    def get_all_by_team_id(self, team_id: int) -> list[AthleteTeams]:
+        with self._session() as session:
+            rows = session.execute(
+                select(self._T).where(AthleteTeams.team_id_FK == team_id)
+            ).all()
+
+            return rows
+
 class ServiceManager:
     def __init__(self, session, services=[]) -> None:
         self.services = dict(zip(services, map(lambda service: service(session), services)))
