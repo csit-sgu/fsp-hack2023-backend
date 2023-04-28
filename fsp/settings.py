@@ -11,10 +11,10 @@ class Settings(BaseSettings):
     database_admin_password: str = "password"
     database_url: str = "localhost"
     database_name: str = "postgres"
-    
+
     class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
 config = Settings()

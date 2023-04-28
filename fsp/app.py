@@ -34,8 +34,9 @@ from typing import List
 import bcrypt
 import sqlalchemy as sa
 
+from uuid import uuid4
+
 app = Flask(__name__)
-# app.wsgi_app = CheckFields(app.wsgi_app)  # проверка на пустоту JSON-объектов
 CORS(app, supports_credentials=True)
 
 app.secret_key = config.secret
@@ -51,6 +52,7 @@ services = ServiceManager(sess)
 
 @app.post("/auth/login")
 def login():
+    session_id = uuid4()
     user_service = services.get(UserService)
 
     body = dict(request.json)
@@ -60,17 +62,21 @@ def login():
     user: User = user_service.get_by_login(email)
 
     if user is None or not bcrypt.checkpw(password.encode("utf-8"), user.password):
-        abort(400, "Пользователь не существует или не найден")
+        error = {"error": f"Пользователь не существует или не найден ({session_id})"}
+        app.logger.error(error)
+        abort(400, error)
 
     claims = list(map(lambda x: x.value, user.claims))
 
-    token = JWT.create({"email": user.email, "claims": claims})
+    token = JWT.create({"email": user.email, "claims": claims, "uuid": session_id})
 
+    app.logger.info(f"Аутентификация прошла успешно ({session_id})")
     return {"token": token}, 200
 
 
 @app.post("/auth/register")
 def register():
+    session_id = uuid4()
     user_service = services.get(UserService)
     profile_service: ProfileService = services.get(ProfileService)
 
@@ -80,26 +86,34 @@ def register():
     user: User = user_service.get_by_login(email)
 
     if user is not None:
-        abort(400, "Этот пользователь уже существует")
+        error = {"error": "Пользователь с таким адресом уже существует"}
+        app.logger.error(f"Пользователь с таким адресом уже существует ({session_id})")
+        abort(400, {"error": error, "session_id": session_id})
 
     auth_data["password"] = hash_password(auth_data["password"])
     try:
         user = User(**auth_data)
-        print(user)
         user_service.add(user)
-        ok = True
+        app.logger.info(f"Пользователь успешно зарегистрирован ({session_id})")
     except NameError as e:
-        print(f"Что-то пошло не так: {e}")
-        abort(400, f"Неверный набор аргументов: {e}")
+        abort(
+            400,
+            {
+                "error": f"Некорректный набор параметров ({session_id})",
+                "session_id": session_id,
+            },
+        )
     except Exception as e:
-        print(f"Что-то пошло не так: {auth_data}")
-        abort(500, f"Что-то пошло не так: {e}")
+        abort(
+            500,
+            {"error": f"Что-то пошло не так ({session_id})", "session_id": session_id},
+        )
 
     try:
         profile_service.update(email, body["profile"])
     except Exception as e:
-        print(f"Что-то пошло не так: {e}")
-        abort(500, f"Что-то пошло не так: {e}")
+        app.logger.info(f"Что-то пошло не так при создании профиля: {e} ({session_id})")
+        abort(500, {"error": f"Что-то пошло не так", "session_id": session_id})
 
     return ("", 201)
 
@@ -107,13 +121,16 @@ def register():
 @auth_required([Claim.ADMINISTRATOR, Claim.REPRESENTATIVE, Claim.PARTNER])
 @app.post("/events")
 def add_event():
+    session_id = uuid4()
     event_service: EventService = services.get(EventService)
     body = dict(request.json)
 
     try:
         event_service.add(Event(**body))
+        app.logger.info(f"Событие успешно добавлено ({session_id})")
     except Exception as e:
-        abort(400, e)
+        app.logger.error(f"Что-то пошло не так: {e}")
+        abort(500, {"error": "Что-то пошло не так", "session_id": session_id})
 
     return ("", 201)
 
@@ -123,6 +140,7 @@ def add_event():
 )
 @app.get("/events")
 def get_event():
+    session_id = uuid4()
     event_service: EventService = services.get(EventService)
     page = int(request.args.get("page"))
     per_page = int(request.args.get("per_page"))
@@ -141,62 +159,78 @@ def get_event():
                 about=event.about,
             )
             events.append(retrieve_fields(new_event))
+            app.logger.info(f"События успешно получены ({session_id})")
         return json.dumps(events), 200
     except Exception as e:
-        print(e)
-        abort(400, e)
+        error = f"Что-то пошло не так: "
+        app.logger.error(f"Что-то пошло не так: {e} ({session_id})")
+        abort(400, {"error": "Что-то пошло не так", "session_id": session_id})
 
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.get("/profile/<email>")
 def get_profile():
+    session_id = uuid4()
     profile_service: ProfileService = services.get(ProfileService)
 
     try:
         result: List[Row] = profile_service.get(request.args["email"])
+        app.logger.info(f"Профиль успешно получен ({session_id})")
         return json.dumps(retrieve_fields(result)), 200
     except Exception as e:
-        abort(400, e)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e})")
+        abort(400, {"error": error, "session_id": session_id})
 
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.post("/profile")
 def update_profile(email: str):
+    session_id = uuid4()
     profile_service: ProfileService = services.get(ProfileService)
     body = dict(request.json)
 
     try:
         profile_service.update(email, **body["profile"])
+        app.logger.info(f"Профиль успешно обновлен ({session_id})")
+        return ("", 201)
     except Exception as e:
-        abort(400, e)
-
-    return ("", 201)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"Что-то пошло не так: {e} ({session_id})")
+        abort(400, {"error": error, "session_id": session_id})
 
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.get("/request")
 def add_request(email):
+    session_id = uuid4()
     request_service: RequestService = services.get(RequestService)
     body = dict(request.json)
 
     try:
         request_service.add(email, EventRequest(**body))
+        app.logger.info(f"Запрос успешно создан ({session_id})")
+        return ("", 201)
     except Exception as e:
-        abort(400, e)
-
-    return ("", 201)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e}")
+        abort(500, {"error": error, "session_id": session_id})
 
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.post("/request")
 def get_requests(email):
+    session_id = uuid4()
     request_service: RequestService = services.get(RequestService)
 
     try:
         requests = request_service.get_requests(email)
+        app.logger.info(f"Запросы успешно получены {session_id}")
         return json.dumps(requests), "201"
     except Exception as e:
-        abort(400, e)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e}")
+        abort(500, {"error": error, "session_id": session_id})
 
 
 @auth_required(
@@ -204,6 +238,7 @@ def get_requests(email):
 )
 @app.get("/leaderboard/users")
 def get_users_leaderboard():
+    session_id = uuid4()
     athlete_service: AthleteService = services.get(AthleteService)
 
     page = int(request.args.get("page"))
@@ -224,17 +259,21 @@ def get_users_leaderboard():
                 team_FK=athlete.team_FK, rating=athlete.rating, role=athlete.role
             )
             athletes.append(retrieve_fields(new_athlete))
-
+        app.logger.log(f"Рейтинг спортсменов получен успешно ({session_id})")
         return json.dumps(athletes), 200
 
     except Exception as e:
-        print(e)
-        abort(400, e)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e}")
+        abort(500, {"error": error, "session_id": session_id})
 
 
-@auth_required([Claim.ATHLETE, Claim.ADMINISTRATOR, Claim.PARTNER, Claim.REPRESENTATIVE])
+@auth_required(
+    [Claim.ATHLETE, Claim.ADMINISTRATOR, Claim.PARTNER, Claim.REPRESENTATIVE]
+)
 @app.get("/leaderboard/teams")
 def get_teams_leaderboard():
+    session_id = uuid4()
     team_service: TeamService = services.get(TeamService)
 
     page = int(request.args.get("page"))
@@ -258,17 +297,19 @@ def get_teams_leaderboard():
                 datetime_create=str(team.datetime_create),
             )
             teams.append(retrieve_fields(new_team))
-
+        app.logger.info(f"Рейтинг команд получен успешно ({session_id})")
         return json.dumps(teams), 200
 
     except Exception as e:
-        print(e)
-        abort(400, e)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e}")
+        abort(500, {"error": error, "session_id": session_id})
 
 
 @auth_required([Claim.ATHLETE])
 @app.get("/teams/<name>")
 def get_team_info():
+    session_id = uuid4()
     team_service: TeamService = ServiceManager(TeamService)
     athlete_service: AthleteService = ServiceManager(AthleteService)
     athlete_teams_service: AthleteTeamsService = ServiceManager(AthleteTeamsService)
@@ -286,17 +327,19 @@ def get_team_info():
         for t in athlete_teams:
             a: Athlete = athlete_service.get_by_id(t.athlete_id_FK)
             athletes.append(a)
-
+        app.logger.info(f"Информация о команде получена успешно ({session_id})")
         return {"name": team.name, "rating": team.rating, "athletes": athletes}, 200
 
     except Exception as e:
-        print(e)
-        abort(400, e)
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e}")
+        abort(500, {"error": error, "session_id": session_id})
 
 
 @auth_required([Claim.ATHLETE])
 @app.post("/teams")
 def create_team():
+    session_id = uuid4()
     body = dict(request.json)
     email: str = JWT.extract(body["token"])["email"]
     if email is None:
@@ -323,10 +366,9 @@ def create_team():
         athlete_teams = AthleteTeams(
             athlete_id_FK=db_user.athlete_FK, team_id_FK=team.id, role=Role.LEAD
         )
-
+        app.logger.log(f"Команда создана успешно({session_id})")
         athlete_teams_service.add(athlete_teams)
         return ("", 201)
-
     except Exception as e:
         print(e)
         abort(400, e)
