@@ -157,20 +157,7 @@ def get_profile():
         return json.dumps(retrieve_fields(result)), 200
     except Exception as e:
         abort(400, e)
-        
-@auth_required([Claim.ADMINISTRATOR])
-@app.post('/profile')
-def update_profile(email: str):
-    
-    profile_service: ProfileService = services.get(ProfileService)
-    body = dict(request.json)
-    
-    try:
-        profile_service.update(email, **body['profile'])
-    except Exception as e:
-        abort(400, e)
-        
-    return ('', 201)
+
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.post("/profile")
