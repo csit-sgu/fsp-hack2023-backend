@@ -332,3 +332,44 @@ def create_team():
     except Exception as e:
         print(e)
         abort(400, e)
+
+@auth_required([Claim.ATHLETE])
+@app.post('/teams/<name>/<email>')
+def add_athlete_to_the_team():
+
+    body = dict(request.json)
+    email: str = JWT.extract(body["token"])["email"]
+    if email is None:
+        return (401, "Неверный или истекший JSON веб токен")
+
+    team_service: TeamService = ServiceManager(TeamService)
+    athlete_teams_service: AthleteTeamsService = ServiceManager(AthleteTeamsService)
+
+    try:
+        team_name = request.args['name']
+        email = request.args['email']
+        team = TeamDB(name=body["name"], rating=100)
+        
+
+        ok = team_service.add(team)
+        if not ok:
+            return ({"error": "Команда с таким называнием уже существует"}, 200)
+
+        with sess() as _session:
+            db_user: UserDB = _session.execute(
+                sa.select(UserDB).where(UserDB.email == email)
+            ).fetchone()
+
+        if db_user.athlete_FK is None:
+            return (500, "Что-то пошло не так")
+
+        athlete_teams = AthleteTeams(
+            athlete_id_FK=db_user.athlete_FK, team_id_FK=team.id, role=Role.LEAD
+        )
+
+        athlete_teams_service.add(athlete_teams)
+        return ("", 201)
+
+    except Exception as e:
+        print(e)
+        abort(400, e)

@@ -4,6 +4,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     secret: str
     flask_app: str = "./fsp/app.py"
+    token_expiration_time_sec: int = 604800
     database_driver: str = "psycopg2"
     database_dialect: str = "postgresql"
     database_admin_username: str = "postgres"
