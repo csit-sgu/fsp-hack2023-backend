@@ -121,7 +121,8 @@ class EventRequest(Base):
     state = Column(SQLEnum(State), nullable=True)
     datetime_create = Column(DateTime, default=datetime.now, 
             onupdate=datetime.now, nullable=False)
-    representative_FK = Column(Integer, ForeignKey(Representative.id), nullable=False)
+    representative_FK = Column(Integer, ForeignKey(Representative.id), nullable=True)
+    partner_FK = Column(Integer, ForeignKey(Partner.id), nullable=True)
 
 class EventTeam(Base):
     __tablename__ = 'event_team'
