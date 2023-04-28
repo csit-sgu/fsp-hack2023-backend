@@ -2,7 +2,7 @@ import json
 
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import String, Integer, Column, DateTime, \
-        LargeBinary, Text, ForeignKey, Date, PrimaryKeyConstraint
+        LargeBinary, ForeignKey, Date, PrimaryKeyConstraint
 
 from sqlalchemy import Enum as SQLEnum
 from datetime import datetime
@@ -82,7 +82,6 @@ class Profile(Base):
     gender = Column(SQLEnum(Gender), nullable=True)
     organization = Column(String(255), nullable=False)
     skills_FK = Column(Integer, nullable=True)
-    about = Column(Text, nullable=True)
     name = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
     patronymic = Column(String(255), nullable=True)
@@ -91,7 +90,7 @@ class Profile(Base):
 class User(Base):
     __tablename__ = 'users'
     
-    uid = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     date_reg = Column(DateTime, default=datetime.now, nullable=False)
     date_login = Column(DateTime, default=datetime.now, 
             onupdate=datetime.now, nullable=False)
@@ -101,7 +100,7 @@ class User(Base):
     administrator_FK = Column(Integer, ForeignKey(Admin.id), nullable=True)
     partner_FK = Column(Integer,ForeignKey(Partner.id),nullable=True)
     personal_FK = Column(Integer, ForeignKey(Profile.id), nullable=True)
-    email =  Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
 
 class Event(Base):
     __tablename__ = 'event'

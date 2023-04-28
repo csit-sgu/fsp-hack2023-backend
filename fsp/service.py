@@ -3,7 +3,8 @@ from sqlalchemy import select, update
 from .entity import User, Event, Profile
 from .db.models import User as UserDB, \
         Event as EventDB, \
-        Profile as ProfileDB
+        Profile as ProfileDB, \
+        EventRequest as EventRequestDB
 from .db.models import Claim, Athlete, Admin, Representative, Partner
 
 class Service():
@@ -16,6 +17,7 @@ class Service():
         with self._session() as session:
             user = session.execute(select(self._T).where(self._T.guid == guid))
             return user
+
 
 class ClaimService():
 
@@ -94,14 +96,18 @@ class EventService(Service):
         
 class ProfileService(Service):
     def __init__(self, session):
-        super().__init__(ProfileService, session)
+        super().__init__(ProfileDB, session)
+        
         
     def update(self, email, fields):
         with self._session() as session:
+            row = session.execute(select(UserDB).where(UserDB.email == email)).fetchone()
+            user: UserDB = row[0]
             profile = session.execute(select(self._T)
-                    .where(self._T.email == email)).fetchone()
+                    .where(self._T.id == user.id)).fetchone()
             if profile is None:
-                session.add(ProfileDB(**fields))
+                
+                session.add(ProfileDB(id=user.id, **fields))
             else:
                 session.query(ProfileDB).update(fields)
             session.commit()
@@ -125,6 +131,14 @@ class ProfileService(Service):
                     profile.insurance)
             except:
                 return None
+            
+class RequestService(Service):
+    def __init__(self, session) -> None:
+        super().__init__(RequestService, session)
+        
+    
+    def add(self, event_request):
+        pass
 
 class ServiceManager:
     
