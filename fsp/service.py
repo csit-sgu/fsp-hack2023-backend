@@ -162,7 +162,6 @@ class RequestService(Service):
         rows = session.execute(select(self._T).where(self._T.id == id)).all()
 
         return collect_results(self._T, rows)
-
     def add(self, event_request):
         pass
 
