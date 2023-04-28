@@ -3,6 +3,8 @@ from datetime import datetime
 
 from .db.models import Claim, Gender
 
+from .db.models import State
+
 @dataclass
 class User:
   email: str
@@ -29,3 +31,12 @@ class Profile:
   surname: str
   patronymic: str
   insurance: str
+  
+@dataclass
+class EventRequest:
+  id: int
+  event_id: int
+  state: State
+  datetime_create: datetime
+  representative_FK: int = None
+  partner_FK: int = None

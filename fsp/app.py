@@ -7,14 +7,14 @@ import json
 
 from .db.utils import init_connection
 from .utils import hash_password
-from .service import ServiceManager, UserService, EventService, ProfileService
+from .service import ServiceManager, UserService, EventService, ProfileService, RequestService
 from .db.utils import init_connection
 from .utils import  hash_password, retrieve_fields
 
 from sqlalchemy import Row
 
 from .db.models import Event
-from .entity import User, Claim
+from .entity import User, Claim, EventRequest
 from .middleware import CheckFields, auth_required
 from .token import JWT
 
@@ -127,8 +127,6 @@ def get_event():
                 location=event.location, about=event.about
             )
             events.append(retrieve_fields(new_event))
-            
-        print(events)
         return json.dumps(events), 200
     except Exception as e:
         print(e)
@@ -159,3 +157,30 @@ def update_profile(email):
         abort(400, e)
         
     return ('', 201)
+
+@auth_required([Claim.ADMINISTRATOR])
+@app.get('/request')
+def add_request(email):
+    
+    request_service: RequestService = services.get(RequestService)
+    body = dict(request.json)
+    
+    try:
+        request_service.add(email, EventRequest(**body))
+    except Exception as e:
+        abort(400, e)
+        
+    return ('', 201)
+
+
+@auth_required([Claim.ADMINISTRATOR])
+@app.post('/request')
+def get_requests(email):
+    
+    request_service: RequestService = services.get(RequestService)
+    
+    try:
+        requests = request_service.get_requests(email)
+        return json.dumps(requests), '201'
+    except Exception as e:
+        abort(400, e)

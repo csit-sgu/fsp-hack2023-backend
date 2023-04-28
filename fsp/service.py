@@ -1,11 +1,13 @@
 from sqlalchemy import select, update
 
-from .entity import User, Event, Profile
+from .entity import User, Event, Profile, EventRequest
 from .db.models import User as UserDB, \
         Event as EventDB, \
         Profile as ProfileDB, \
         EventRequest as EventRequestDB
 from .db.models import Claim, Athlete, Admin, Representative, Partner
+
+from .utils import retrieve_fields, collect_results
 
 class Service():
 
@@ -75,7 +77,6 @@ class EventService(Service):
         super().__init__(EventDB, session)
         
     def add(self, event: Event):
-        
         with self._session() as session:
             session.add(EventDB(
                 name=event.name,
@@ -137,11 +138,23 @@ class RequestService(Service):
         super().__init__(RequestService, session)
         
     
-    def add(self, event_request):
-        pass
-
+    def add(self, event_request: EventRequest):
+        with self._session() as session:
+            session.add(EventRequestDB(**retrieve_fields(event_request)))
+            session.commit()
+            
+    def get_requests(self, email):
+        with self._session as session:
+            user: UserDB = session.execute(select(UserDB)
+                                           .where(UserDB.email == email)) \
+                    .fetch_one()[0]
+            
+        id = user.id
+        rows = session.execute(select(self._T).where(self._T.id == id)).all()
+        
+        return collect_results(self._T, rows)
+        
 class ServiceManager:
-    
     def __init__(self, session, services=[]) -> None:
         self.services = dict(zip(services, map(lambda service: service(session), services)))
         self.session = session

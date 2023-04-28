@@ -48,3 +48,11 @@
 
 ## `GET /profile/<url parameter>`
 
+## `GET /request`
+
+```json
+{
+  ""
+}
+```
+
