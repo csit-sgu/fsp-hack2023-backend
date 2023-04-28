@@ -23,6 +23,7 @@ from .db.models import (
     Athlete,
     AthleteTeams,
     Role,
+    Profile,
     Team as TeamDB,
     User as UserDB,
 )
@@ -413,3 +414,63 @@ def add_athlete_to_the_team():
     except Exception as e:
         print(e)
         abort(400, e)
+
+@auth_required([Claim.ADMINISTRATOR, Claim.ATHLETE, Claim.PARTNER, Claim.REPRESENTATIVE])
+@app.get('/me/profile')
+def get_my_profile():
+    session_id = uuid4()
+
+    body = dict(request.json)
+    email: str = JWT.extract(body["token"])["email"]
+    if email is None:
+        return (401, "Неверный или истекший JSON веб токен")
+
+    user_service: UserService = ServiceManager(UserService)
+    user: User = user_service.get_by_login(email)
+
+    with sess() as _session:
+        db_user: UserDB = _session.execute(
+            sa.select(UserDB)
+            .where(UserDB.email == user.email)
+        ).fetchone()[0]
+
+        if db_user.personal_FK is None:
+            return (500, 'Что-то пошло не так')
+
+        profile: Profile = _session.execute(
+            sa.select(Profile)
+            .where(Profile.id == db_user.personal_FK)
+        ).fetchone()
+        
+        return {
+            'phone': profile.phone,
+            'address': profile.address,
+            'passport': profile.passport,
+            'birthday': profile.birthday,
+            'gender': profile.gender.value,
+            'organization': profile.organization,
+            'skills': profile.skills,
+            'name': profile.name,
+            'surname': profile.surname,
+            'patronymic': profile.patronymic,
+            'insurance': profile.insurance
+        }, 200
+
+    try:
+        team: TeamDB | None = team_service.get_by_name(name)
+        if team is None:
+            abort(404, "Команда с таким именем не найдена")
+
+        athlete_teams = athlete_teams_service.get_all_by_team_id(team.id)
+
+        athletes = []
+        for t in athlete_teams:
+            a: Athlete = athlete_service.get_by_id(t.athlete_id_FK)
+            athletes.append(a)
+        app.logger.info(f"Информация о команде получена успешно ({session_id})")
+        return {"name": team.name, "rating": team.rating, "athletes": athletes}, 200
+
+    except Exception as e:
+        error = f"Что-то пошло не так ({session_id})"
+        app.logger.error(f"{error}: {e}")
+        abort(500, {"error": error, "session_id": session_id})
