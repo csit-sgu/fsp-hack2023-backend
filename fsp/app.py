@@ -39,7 +39,7 @@ services = ServiceManager(sess)
 def login():
     user_service = services.get(UserService)
     
-    body = request.json
+    body = dict(request.json)
     password = body['password']
     email = body['email']
         
@@ -63,35 +63,40 @@ def register():
     profile_service: ProfileService = services.get(ProfileService)
 
     body = dict(request.json)
-    email = body['email']
+    auth_data = body['auth']
+    email = auth_data['email']
     user: User = user_service.get_by_login(email)
 
     
     if user is not None:
         abort(400, "Этот пользователь уже существует")
 
-    body['password'] = hash_password(body['password'])
-
+    auth_data['password'] = hash_password(auth_data['password'])
     try:
-        user_service.add(User(**body))
+        user = User(**auth_data)
+        print(user)
+        user_service.add(user)
         ok = True
     except NameError as e:
+        print(f"Что-то пошло не так: {e}")
         abort(400, f"Неверный набор аргументов: {e}")
     except Exception as e:
+        print(f"Что-то пошло не так: {auth_data}")
         abort(500, f"Что-то пошло не так: {e}")
-        
-    profile_service: ProfileService = services.get(ProfileService)
     
     try:
-        profile_service.update(email, **body['profile'])
+        profile_service.update(email, body['profile'])
     except Exception as e:
+        print(f"Что-то пошло не так: {e}")
         abort(500, f"Что-то пошло не так: {e}")
+    
+    ok = True
         
     return ('', 201) if ok else ('', 400)
 
 @auth_required([Claim.ADMINISTRATOR, Claim.REPRESENTATIVE, Claim.PARTNER])
 @app.post('/events')
-def add_event(email):
+def add_event():
 
     event_service: EventService = services.get(EventService)
     body = dict(request.json)
@@ -106,7 +111,7 @@ def add_event(email):
 @auth_required([Claim.ADMINISTRATOR, Claim.PARTNER, 
                 Claim.ATHLETE, Claim.REPRESENTATIVE])
 @app.get('/events')
-def get_event(email):
+def get_event():
     
     event_service: EventService = services.get(EventService)
     page = int(request.args.get('page'))
@@ -129,7 +134,7 @@ def get_event(email):
         
 @auth_required([Claim.ADMINISTRATOR])
 @app.get('/profile/<email>')
-def get_profile(email):
+def get_profile():
     
     profile_service: ProfileService = services.get(ProfileService)
     
@@ -145,8 +150,10 @@ def update_profile(email):
     
     profile_service: ProfileService = services.get(ProfileService)
     
+    body = dict(request.json)
+    
     try:
-        profile_service.update()
+        profile_service.update(email, **body['profile'])
     except Exception as e:
         abort(400, e)
         
