@@ -21,11 +21,12 @@ def make_default_asserts(body):
         abort(400, "Некоторые из полей запроса пусты")
 
 
+# Костыль, спасибо SQL Alchemy за это
 def retrieve_fields(obj):
     return dict((x, y) for x, y in obj.__dict__.items() if not x.startswith("_"))
 
 
-def collect_results(type, rows):
+def collect_results(rows):
     results = []
 
     for row in rows:
