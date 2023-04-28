@@ -6,32 +6,32 @@ from flask_cors import CORS
 import json
 
 from .db.utils import init_connection
-from .utils import hash_password
-from .service import ServiceManager, UserService, EventService, ProfileService, RequestService
-from .db.utils import init_connection
 from .utils import  hash_password, retrieve_fields
 
 from sqlalchemy import Row
+from .service import ServiceManager, UserService, EventService, ProfileService, RequestService
+from .settings import config
 
 from .db.models import Event
 from .entity import User, Claim, EventRequest
 from .middleware import CheckFields, auth_required
 from .token import JWT
 
+from sqlalchemy import Row
 from typing import List
-
 import bcrypt
 
 app = Flask(__name__)
-# app.wsgi_app = CheckFields(app.wsgi_app) # проверка на пустоту JSON-объектов
+app.wsgi_app = CheckFields(app.wsgi_app) # проверка на пустоту JSON-объектов
 CORS(app, supports_credentials=True)
 
-secret = os.environ.get('SECRET')
-if secret is None:
-    raise RuntimeError('Please, set the SECRET environment variable')
-app.secret_key = secret
+app.secret_key = config.secret
 
-engine, sess = init_connection('postgresql+psycopg2://postgres:postgres@localhost/postgres')
+engine, sess = init_connection(
+    f'{config.database_dialect}+{config.database_driver}://' + 
+    f'{config.database_admin_username}:{config.database_admin_password}@' +
+    f'{config.database_url}/{config.database_name}'
+)
 
 services = ServiceManager(sess)
 
