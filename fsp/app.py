@@ -170,12 +170,12 @@ def get_event():
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.get("/profile/<email>")
-def get_profile():
+def get_profile(email: str):
     session_id = uuid4()
     profile_service: ProfileService = services.get(ProfileService)
 
     try:
-        result: List[Row] = profile_service.get(request.args["email"])
+        result: List[Row] = profile_service.get(email)
         app.logger.info(f"Профиль успешно получен ({session_id})")
         return json.dumps(retrieve_fields(result)), 200
     except Exception as e:
@@ -309,13 +309,11 @@ def get_teams_leaderboard():
 
 @auth_required([Claim.ATHLETE])
 @app.get("/teams/<name>")
-def get_team_info():
+def get_team_info(name: str):
     session_id = uuid4()
     team_service: TeamService = services.get(TeamService)
     athlete_service: AthleteService = services.get(AthleteService)
     athlete_teams_service: AthleteTeamsService = services.get(AthleteTeamsService)
-
-    name = request.args["name"]
 
     try:
         team: TeamDB | None = team_service.get_by_name(name)
@@ -376,7 +374,7 @@ def create_team():
 
 @auth_required([Claim.ATHLETE])
 @app.post('/teams/<name>/<email>')
-def add_athlete_to_the_team():
+def add_athlete_to_the_team(name: str, email: str):
 
     body = dict(request.json)
     email: str = JWT.extract(body["token"])["email"]
@@ -387,10 +385,8 @@ def add_athlete_to_the_team():
     athlete_teams_service: AthleteTeamsService = services.get(AthleteTeamsService)
 
     try:
-        team_name = request.args['name']
-        email = request.args['email']
+        team_name = name
         team = TeamDB(name=body["name"], rating=100)
-        
 
         ok = team_service.add(team)
         if not ok:
