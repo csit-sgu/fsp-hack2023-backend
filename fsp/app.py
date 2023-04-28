@@ -157,7 +157,20 @@ def get_profile():
         return json.dumps(retrieve_fields(result)), 200
     except Exception as e:
         abort(400, e)
-
+        
+@auth_required([Claim.ADMINISTRATOR])
+@app.post('/profile')
+def update_profile(email: str):
+    
+    profile_service: ProfileService = services.get(ProfileService)
+    body = dict(request.json)
+    
+    try:
+        profile_service.update(email, **body['profile'])
+    except Exception as e:
+        abort(400, e)
+        
+    return ('', 201)
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.post("/profile")
@@ -202,7 +215,6 @@ def get_requests(email):
 @auth_required(
     [Claim.ATHLETE, Claim.ADMINISTRATOR, Claim.PARTNER, Claim.REPRESENTATIVE]
 )
-@auth_required([Claim.ATHLETE, Claim.ADMINISTRATOR, Claim.PARTNER, Claim.REPRESENTATIVE])
 @app.get("/leaderboard/users")
 def get_users_leaderboard():
     athlete_service: AthleteService = services.get(AthleteService)
@@ -218,7 +230,6 @@ def get_users_leaderboard():
 
     try:
         result: List[Row] = athlete_service.get(page, per_page, order)
-
         athletes = []
         for row in result:
             athlete = row[0]
