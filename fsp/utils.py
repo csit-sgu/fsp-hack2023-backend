@@ -23,7 +23,8 @@ def make_default_asserts(body):
 
 # Костыль, спасибо SQL Alchemy за это
 def retrieve_fields(obj):
-    return dict((x, y) for x, y in obj.__dict__.items() if not x.startswith("_"))
+    
+    return dict((x, str(y)) for x, y in obj.__dict__.items() if not x.startswith("_"))
 
 
 def collect_results(rows):

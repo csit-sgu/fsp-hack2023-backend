@@ -69,7 +69,7 @@ def login():
 
     claims = list(map(lambda x: x.value, user.claims))
 
-    token = JWT.create({"email": user.email, "claims": claims, "uuid": session_id})
+    token = JWT.create({"email": user.email, "claims": claims, "uuid": str(session_id)})
 
     app.logger.info(f"Аутентификация прошла успешно ({session_id})")
     return {"token": token}, 200
@@ -140,7 +140,7 @@ def add_event():
     [Claim.ADMINISTRATOR, Claim.PARTNER, Claim.ATHLETE, Claim.REPRESENTATIVE]
 )
 @app.get("/events")
-def get_event():
+def get_events():
     session_id = uuid4()
     event_service: EventService = services.get(EventService)
     page = int(request.args.get("page"))
@@ -153,6 +153,7 @@ def get_event():
         for row in result:
             event = row[0]
             new_event = Event(
+                id=event.id,
                 name=event.name,
                 date_started=str(event.date_started),
                 date_ended=str(event.date_ended),
@@ -163,19 +164,32 @@ def get_event():
             app.logger.info(f"События успешно получены ({session_id})")
         return json.dumps(events), 200
     except Exception as e:
-        error = f"Что-то пошло не так: "
+        app.logger.error(f"Что-то пошло не так: {e} ({session_id})")
+        abort(400, {"error": "Что-то пошло не так", "session_id": session_id})
+        
+@app.get("/event/<id>")
+def get_event(id):
+    session_id = uuid4()
+    event_service: EventService = services.get(EventService)
+
+    try:
+        result: Event = event_service.get_by_id(id)
+
+        app.logger.info(f"События успешно получены ({session_id})")
+        return json.dumps(retrieve_fields(result)), 200
+    except Exception as e:
         app.logger.error(f"Что-то пошло не так: {e} ({session_id})")
         abort(400, {"error": "Что-то пошло не так", "session_id": session_id})
 
 
 @auth_required([Claim.ADMINISTRATOR])
 @app.get("/profile/<email>")
-def get_profile():
+def get_profile(email):
     session_id = uuid4()
     profile_service: ProfileService = services.get(ProfileService)
 
     try:
-        result: List[Row] = profile_service.get(request.args["email"])
+        result: List[Row] = profile_service.get(email)
         app.logger.info(f"Профиль успешно получен ({session_id})")
         return json.dumps(retrieve_fields(result)), 200
     except Exception as e:

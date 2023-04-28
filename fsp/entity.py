@@ -20,6 +20,7 @@ class Event:
     date_ended: str
     location: str
     about: str
+    id: str = None
 
 
 @dataclass

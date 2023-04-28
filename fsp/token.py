@@ -1,14 +1,15 @@
 import jwt
 import os
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+import datetime
 from .db.models import Claim
 from .settings import config
 
 class JWT:
     @staticmethod
     def create(claims: dict) -> str:
-        curr_time = datetime.now(tz=datetime.timezone.utc)
+        curr_time = datetime.datetime.now(tz=datetime.timezone.utc)
         delta = timedelta(seconds=config.token_expiration_time_sec)
 
         return jwt.encode(

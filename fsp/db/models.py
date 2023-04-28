@@ -1,5 +1,3 @@
-import json
-
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import (
     String,
@@ -10,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Date,
     PrimaryKeyConstraint,
+    Text
 )
 
 from sqlalchemy import Enum as SQLEnum
@@ -113,6 +112,7 @@ class User(Base):
     date_login = Column(
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
     )
+    
     hashed_password = Column(LargeBinary, nullable=False)
     athlete_FK = Column(Integer, ForeignKey(Athlete.id), nullable=True)
     representative_FK = Column(Integer, ForeignKey(Representative.id), nullable=True)
@@ -131,7 +131,7 @@ class Event(Base):
     date_started = Column(DateTime, nullable=True)
     date_ended = Column(DateTime, nullable=True)
     location = Column(String(255), nullable=True)
-    about = Column(String(255), nullable=True)
+    about = Column(Text, nullable=True)
 
 
 class EventRequest(Base):

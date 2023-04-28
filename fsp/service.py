@@ -20,7 +20,7 @@ class Service:
 
     def get_by_id(self, id: int):
         with self._session() as session:
-            entity = session.execute(select(self._T).where(self._T.id == id)).fethone()
+            entity = session.execute(select(self._T).where(self._T.id == id)).fetchone()
             if entity[0] is not None:
                 return entity[0]
             else:
@@ -162,8 +162,6 @@ class RequestService(Service):
         rows = session.execute(select(self._T).where(self._T.id == id)).all()
 
         return collect_results(self._T, rows)
-    def add(self, event_request):
-        pass
 
 
 class AthleteService(Service):
