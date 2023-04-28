@@ -16,3 +16,6 @@ def make_default_asserts(body):
         
     if any([is_none_or_empty(v) for v in body.values()]):
         abort(400, "Некоторые из полей запроса пусты")
+        
+def retrieve_fields(obj):
+    return dict((x, y) for x, y in obj.__dict__.items() if not x.startswith('_'))

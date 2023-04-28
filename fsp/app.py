@@ -9,7 +9,7 @@ from .db.utils import init_connection
 from .utils import hash_password
 from .service import ServiceManager, UserService, EventService, ProfileService
 from .db.utils import init_connection
-from .utils import  hash_password
+from .utils import  hash_password, retrieve_fields
 
 from sqlalchemy import Row
 
@@ -89,10 +89,8 @@ def register():
     except Exception as e:
         print(f"Что-то пошло не так: {e}")
         abort(500, f"Что-то пошло не так: {e}")
-    
-    ok = True
         
-    return ('', 201) if ok else ('', 400)
+    return ('', 201)
 
 @auth_required([Claim.ADMINISTRATOR, Claim.REPRESENTATIVE, Claim.PARTNER])
 @app.post('/events')
@@ -124,12 +122,16 @@ def get_event():
         for row in result:
             event = row[0]
             new_event = Event(
-                event.name, str(event.date_started), str(event.date_ended),
-                event.location, event.about)
-            events.append(new_event.__dict__)
+                name=event.name, date_started=str(event.date_started), 
+                date_ended=str(event.date_ended),
+                location=event.location, about=event.about
+            )
+            events.append(retrieve_fields(new_event))
             
+        print(events)
         return json.dumps(events), 200
     except Exception as e:
+        print(e)
         abort(400, e)
         
 @auth_required([Claim.ADMINISTRATOR])
@@ -140,7 +142,7 @@ def get_profile():
     
     try:
         result: List[Row] = profile_service.get(request.args['email'])
-        return json.dumps(result.__dict__), 200
+        return json.dumps(retrieve_fields(result)), 200
     except Exception as e:
         abort(400, e)
         
@@ -149,7 +151,6 @@ def get_profile():
 def update_profile(email):
     
     profile_service: ProfileService = services.get(ProfileService)
-    
     body = dict(request.json)
     
     try:
