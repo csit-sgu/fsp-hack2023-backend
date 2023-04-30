@@ -1,7 +1,7 @@
 import requests
 
 class TestAPI:
-  base_url = "http://localhost:5002"
+  base_url = "http://0.0.0.0:5002"
   
   user_payload = {
       'auth': {

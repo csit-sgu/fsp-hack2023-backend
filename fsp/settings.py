@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     database_dialect: str = "postgresql"
     database_admin_username: str = "postgres"
     database_admin_password: str = "password"
-    database_url: str = "localhost"
+    database_url: str = "0.0.0.0"
     database_name: str = "postgres"
 
     class Config:
